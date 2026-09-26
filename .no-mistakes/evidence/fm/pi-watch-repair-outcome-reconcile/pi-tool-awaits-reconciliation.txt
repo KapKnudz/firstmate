@@ -1,0 +1,97 @@
+HEAD 7d86eaa57078d575d00270988e56e9713e399d24
+Scenario: model-callable repair tool waits for delayed reconciliation before success.
+Runtime: Pi 0.87.1, openai-codex/gpt-5.6-sol, private tmux socket, disposable marked FM_HOME.
+Method: held the real durable outcome-store lock for 6 seconds, then asked the real model to call the only enabled tool.
+
+--- Native Pi pane while reconciliation lock remained held ---
+
+ pi v0.87.1
+ escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more
+ Press ctrl+o to show full startup help and loaded resources.
+
+ Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.
+
+[Extensions]
+  fm-branch-supervision.ts, fm-primary-pi-watch.ts
+
+
+ Warning: tmux extended-keys-format is xterm. Pi works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart
+ tmux.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Package Updates Available
+ Package updates are available. Run pi update --extensions
+ Packages:
+ - compact-adviser
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+ Call fm_watch_arm_pi exactly once now, then report whether it succeeded.
+
+
+── ⠹ Working ───────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/.no-mistakes/worktrees/7881bb4ae5da/01M3EDCMH3ZVNRFE97YCP7K7ZS (detached)
+$0.000 (sub) 0.2%/272k (auto)                                                                            (openai-codex) gpt-5.6-sol • medium
+
+
+
+
+
+
+
+
+
+
+
+
+--- Native Pi pane after lock release ---
+
+ pi v0.87.1
+ escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more
+ Press ctrl+o to show full startup help and loaded resources.
+
+ Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.
+
+[Extensions]
+  fm-branch-supervision.ts, fm-primary-pi-watch.ts
+
+
+ Warning: tmux extended-keys-format is xterm. Pi works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart
+ tmux.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Package Updates Available
+ Package updates are available. Run pi update --extensions
+ Packages:
+ - compact-adviser
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+ Call fm_watch_arm_pi exactly once now, then report whether it succeeded.
+
+
+
+ fm_watch_arm_pi
+ watcher: started Pi extension arm child 1; future ordinary re-arms are automatic; call fm_watch_arm_pi again only after a later
+ notification says the cycle is missing, failed, or unhealthy
+
+
+ Succeeded. The Pi watcher cycle started successfully.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/.no-mistakes/worktrees/7881bb4ae5da/01M3EDCMH3ZVNRFE97YCP7K7ZS (detached)
+↑1.4k ↓29 $0.006 (sub) 0.3%/272k (auto)                                                                  (openai-codex) gpt-5.6-sol • medium
+
+
+
+
+--- Durable timing and Pi transcript records ---
+lock-acquired=1790413559.458532000
+prompt-sent=1790413559.515412000
+lock-release-start=1790413565.465344000
+tool-call-record: {"id": "5405351d", "message": {"api": "openai-codex-responses", "content": [{"arguments": {}, "id": "call_pWDWJxBuZjw9VlseaSLzhDts|fc_0a26a587c62ad73e016ab78afa10ec87d2bfe48d3479b1ec2e", "name": "fm_watch_arm_pi", "type": "toolCall"}], "model": "gpt-5.6-sol", "provider": "openai-codex", "rawStopReason": "completed", "responseId": "resp_0a26a587c62ad73e016ab78af885d487d2b954aebcd034c456", "role": "assistant", "stopReason": "toolUse", "timestamp": 1790413559768, "usage": {"cacheRead": 0, "cacheWrite": 0, "cost": {"cacheRead": 0, "cacheWrite": 0, "input": 0.00262, "output": 0.00032, "total": 0.00294}, "input": 655, "output": 16, "reasoning": 0, "totalTokens": 671}}, "parentId": "d0f0c498", "timestamp": "2026-09-26T09:06:02.163Z", "type": "message"}
+tool-result-record: {"id": "892b422a", "message": {"content": [{"text": "watcher: started Pi extension arm child 1; future ordinary re-arms are automatic; call fm_watch_arm_pi again only after a later notification says the cycle is missing, failed, or unhealthy", "type": "text"}], "details": {"message": "watcher: started Pi extension arm child 1; future ordinary re-arms are automatic; call fm_watch_arm_pi again only after a later notification says the cycle is missing, failed, or unhealthy", "ok": true}, "isError": false, "role": "toolResult", "timestamp": 1790413565805, "toolCallId": "call_pWDWJxBuZjw9VlseaSLzhDts|fc_0a26a587c62ad73e016ab78afa10ec87d2bfe48d3479b1ec2e", "toolName": "fm_watch_arm_pi"}, "parentId": "5405351d", "timestamp": "2026-09-26T09:06:05.805Z", "type": "message"}

@@ -1,0 +1,40 @@
+head=7d86eaa57078d575d00270988e56e9713e399d24
+pi_version=0.87.1
+transport=real Pi CLI JSON mode with a private 127.0.0.1 OpenAI-compatible endpoint
+home=isolated disposable FM_HOME under the gate worktree
+
+Reproduction command shape (run once per isolated home):
+FM_HOME=<lab-home> FM_ROOT_OVERRIDE=/Users/kasperknudas/.no-mistakes/worktrees/7881bb4ae5da/01M3EDCMH3ZVNRFE97YCP7K7ZS FM_GATE_REFUSE_BYPASS=1 PI_CODING_AGENT_DIR=<lab-agent-dir> \
+  pi --mode json --offline --approve --no-extensions --no-skills --no-context-files \
+  --session-dir <lab-session-dir> --provider fm-live --model fm-live \
+  --tools fm_watch_arm_pi,fm_branch_processed \
+  -e <lock-before-prompt.ts> -e .pi/extensions/fm-branch-supervision.ts \
+  -e .pi/extensions/fm-primary-pi-watch.ts 'Repair the reported watcher cycle now.'
+
+Exact-once scenario setup:
+FM_HOME=<lab-home> FM_STATE_OVERRIDE=<lab-home>/state bash bin/fm-branch-outcome.sh append \
+  --task repair-case --verdict captain \
+  --summary 'completed while the ordinary notification path was unavailable'
+The private endpoint emits two sequential fm_watch_arm_pi calls, then acknowledges the resulting sequence-keyed processing request.
+repair_calls=2
+visible_outcome_entries=1
+visible_summary=completed while the ordinary notification path was unavailable
+cursor=1
+processed=1
+
+Delayed reconciliation scenario:
+The loaded listener accepts fm-branch-supervision:reconcile and settles after a 700 ms timer; the private endpoint's next request proves when Pi accepted the tool result.
+first_provider_request_ms=1790413286914
+reconciliation_settled_ms=1790413287632
+next_provider_request_ms=1790413287638
+observed_wait_ms=718
+failure_tool_is_error=true
+failure_text=watcher: started Pi extension arm child 1; future ordinary re-arms are automatic; call fm_watch_arm_pi again only after a later notification says the cycle is missing, failed, or unhealthy
+watcher: FAILED - explicit repair could not reconcile supervision outcomes
+no supervision listener accepted the reconciliation request
+
+Native evidence:
+pi-live-exact-once-events.jsonl
+pi-live-exact-once-session.jsonl
+pi-live-delayed-reconciliation-events.jsonl
+pi-live-reconciliation-failure-events.jsonl
