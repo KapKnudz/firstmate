@@ -1,0 +1,27 @@
+$ wc -c < AGENTS.md
+   47114
+$ git show e06a46fec726071618da0460f0de552d4d078ef1:AGENTS.md | wc -c
+   48198
+$ git show e06a46fec726071618da0460f0de552d4d078ef1:AGENTS.md | shasum -a 256
+4d444f8ab8de6cdc468d4380b442a8e22af3683cbeb5f2eb6057dff1c1a941ff  -
+$ bin/fm-test-run.sh --list --changed --base e06... | grep fm-instruction-budget
+tests/fm-instruction-budget.test.sh
+$ bin/fm-test-run.sh --list --lane portable-serial | grep fm-instruction-budget
+tests/fm-instruction-budget.test.sh
+$ bin/fm-test-run.sh --list --family pure-contract-unit | grep fm-instruction-budget (expected absent)
+absent as expected
+$ bash tests/fm-instruction-budget.test.sh
+ok - AGENTS.md is 47114 bytes within the 48198-byte ceiling
+ok - a compliant file exactly at the byte ceiling passes
+instruction-size-budget: 48199 bytes exceeds 48198-byte limit
+ok - a deliberately over-budget file is rejected
+
+$ isolated AGENTS-only retry with a pure-contract control test
+$ bin/fm-test-run.sh --list --changed --base HEAD
+tests/fm-test-run.test.sh
+tests/fm-instruction-budget.test.sh
+$ bin/fm-test-run.sh --list --lane portable-serial
+tests/fm-instruction-budget.test.sh
+$ bin/fm-test-run.sh --list --family pure-contract-unit
+tests/fm-test-run.test.sh
+Result: AGENTS-only selection includes the budget test; portable-serial includes it; pure-contract-unit excludes it.

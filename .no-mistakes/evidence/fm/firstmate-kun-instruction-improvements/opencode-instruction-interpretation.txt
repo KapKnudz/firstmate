@@ -1,0 +1,28 @@
+Live OpenCode primary in disposable FM_HOME
+Prompt: Hypothetical instruction-interpretation check only; do not use tools or change files. Under this repository current instructions: (1) If the captain asks for /stow, is harness-adapters required solely because a skill is being invoked? (2) For a matched dispatch profile array where candidate A has unknown quota/auth evidence, candidate B is authoritatively unsupported, candidate C is the strongest reasoning class but tight, there is an evidence tie, and one profile entry is malformed, state the required routing outcome and safeguards. Answer in a short numbered list.
+
+Captured TUI response:
+
+     1. No — harness-adapters triggers on spawn/recovery, trust dialogs,
+        interrupt/resume/adapter verification, or a harness-specific skill
+        invocation; /stow is an ordinary captain skill, so only stow loads.
+
+     2. Required outcome: do not select by array order or harness identity —
+        with the evidence tie unresolved, preserve candidate C (strongest
+        reasoning class) or report unable to proceed, and escalate/report the
+        malformed profile entry as an actionable config defect rather than
+        routing around it; candidate A stays eligible (unknown evidence is
+        uncertainty, never grounds for login escalation), and only candidate
+        B is blocked (authoritative unsupported = concrete contradictory
+        evidence).
+
+     ▣  Build · Big Pickle · 17.5s
+
+  ┃
+  ┃
+  ┃
+  ┃  Build · Big Pickle OpenCode Zen
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+   /Users/kasperknudas/.no-mistakes/worktrees/       29.5K (15% ctrl+p
+   7881bb4ae5da/01M48YR10Y7BS2V0WXHYPHEV3B                      commands
+

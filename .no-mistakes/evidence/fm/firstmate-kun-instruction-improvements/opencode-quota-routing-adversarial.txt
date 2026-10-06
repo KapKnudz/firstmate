@@ -1,0 +1,28 @@
+Live OpenCode primary in disposable FM_HOME
+Prompt: Hypothetical instruction-interpretation check only; do not use tools or change files. A matched dispatch profile array has three candidates. One candidate name appears to imply a provider and credential mapping, but no authoritative catalog establishes either; another harness CLI could be run to inspect it. Two candidates otherwise tie on the available evidence. Under the current Firstmate instructions, may you infer the mappings, use the other harness CLI, pick by array order or harness identity, or omit any candidate from the account? State the required behavior concisely.
+
+Captured TUI response:
+  ┃
+
+     + Thought: 1.5s
+
+     Captain, no on all counts: you may not infer provider, credential, or
+     quota mappings from a candidate's name, nor judge a candidate with
+     another harness's CLI — only quota-axi evidence counts, and missing or
+     unmeasurable quota/auth evidence stays uncertainty rather than
+     justification for login escalation. With two candidates tied, the tie
+     may never break by array order or harness identity; you must account for
+     every candidate in the ranking, so none may be omitted from the account
+     — the strongest reasoning class is preserved, or you report unable to
+     proceed if nothing distinguishes them.
+
+     ▣  Build · Big Pickle · 10.5s
+
+  ┃
+  ┃
+  ┃
+  ┃  Build · Big Pickle OpenCode Zen
+  ╹▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀▀
+   /Users/kasperknudas/.no-mistakes/worktrees/       29.2K (15% ctrl+p
+   7881bb4ae5da/01M48YR10Y7BS2V0WXHYPHEV3B                      commands
+

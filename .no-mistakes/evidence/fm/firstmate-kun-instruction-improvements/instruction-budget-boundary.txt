@@ -1,0 +1,72 @@
+Independent boundary validation of the existing public shell test
+source worktree: /Users/kasperknudas/.no-mistakes/worktrees/7881bb4ae5da/01M48YR10Y7BS2V0WXHYPHEV3B
+disposable fixture repository: /Users/kasperknudas/.no-mistakes/evidence/01M48YR10Y7BS2V0WXHYPHEV3B/instruction-budget-fixture
+setup commands:
+  mkdir -p /Users/kasperknudas/.no-mistakes/evidence/01M48YR10Y7BS2V0WXHYPHEV3B/instruction-budget-fixture/tests /Users/kasperknudas/.no-mistakes/evidence/01M48YR10Y7BS2V0WXHYPHEV3B/instruction-budget-fixture/bin
+  cp tests/fm-instruction-budget.test.sh tests/lib.sh tests/git-config-helpers.sh /Users/kasperknudas/.no-mistakes/evidence/01M48YR10Y7BS2V0WXHYPHEV3B/instruction-budget-fixture/tests/
+  cp bin/fm-wake-lib.sh bin/fm-path-lib.sh /Users/kasperknudas/.no-mistakes/evidence/01M48YR10Y7BS2V0WXHYPHEV3B/instruction-budget-fixture/bin/
+  git -C /Users/kasperknudas/.no-mistakes/evidence/01M48YR10Y7BS2V0WXHYPHEV3B/instruction-budget-fixture init -q
+setup stdout: (empty)
+
+setup stderr: (empty)
+
+setup exit: 0
+
+Failure reproduction (one byte over ceiling)
+$ printf '%*s' 48199 '' > AGENTS.md
+stdout: (empty)
+stderr: (empty)
+exit: 0
+$ wc -c < AGENTS.md
+stdout:
+   48199
+stderr:
+(empty)
+exit: 0
+$ bash tests/fm-instruction-budget.test.sh
+stdout:
+(empty)
+stderr:
+instruction-size-budget: 48199 bytes exceeds 48198-byte limit
+not ok - AGENTS.md is 48199 bytes, over the 48198-byte ceiling
+exit: 1
+
+Focused verification 1 (exact ceiling)
+$ printf '%*s' 48198 '' > AGENTS.md
+stdout: (empty)
+stderr: (empty)
+exit: 0
+$ wc -c < AGENTS.md
+stdout:
+   48198
+stderr:
+(empty)
+exit: 0
+$ bash tests/fm-instruction-budget.test.sh
+stdout:
+ok - AGENTS.md is 48198 bytes within the 48198-byte ceiling
+ok - a compliant file exactly at the byte ceiling passes
+ok - a deliberately over-budget file is rejected
+stderr:
+instruction-size-budget: 48199 bytes exceeds 48198-byte limit
+exit: 0
+
+Focused verification 2 (one byte over ceiling)
+$ printf '%*s' 48199 '' > AGENTS.md
+stdout: (empty)
+stderr: (empty)
+exit: 0
+$ wc -c < AGENTS.md
+stdout:
+   48199
+stderr:
+(empty)
+exit: 0
+$ bash tests/fm-instruction-budget.test.sh
+stdout:
+(empty)
+stderr:
+instruction-size-budget: 48199 bytes exceeds 48198-byte limit
+not ok - AGENTS.md is 48199 bytes, over the 48198-byte ceiling
+exit: 1
+
