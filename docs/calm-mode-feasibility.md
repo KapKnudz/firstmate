@@ -86,7 +86,7 @@ The persisted assistant message, provider context, tool execution, export data, 
 Collapsed thinking-only assistant messages now render zero rows, thinking before visible assistant text adds no spacing beyond the text-only baseline, and expanding thinking still renders the original reasoning.
 
 The disconfirming checks deliberately retain supported boundaries.
-An arbitrary third-party custom tool and a built-in read image remain visible because Pi exposes neither a global tool renderer nor image-row control.
+An arbitrary third-party custom tool other than Pi's `codemode` tool, and a built-in read image, remain visible because Pi exposes neither a global tool renderer nor image-row control; Calm covers `codemode` through Pi's named renderer-only resolver.
 Expanded thinking remains visible by design, while re-collapsing it returns to zero-height Calm presentation.
 Ordinary user-role near misses remain visible, including quoted current markers, ASCII-only labels, unrelated text before a marker, unrelated text after U+2063, and image-bearing input.
 
@@ -219,6 +219,7 @@ No other `.pi/extensions` file registers or supplies a tool. Commands, lifecycle
 
 The taxonomy was derived from Pi 0.81.1's installed public declarations, documentation, examples, `interactive-mode.js`, and its exported component implementations.
 The test fixture enumerates every class below through the centralized policy, and the interactive fixture exercises the screenshot classes, current user-role operational input, and legacy synthetic presentation entries.
+The installed Pi renderer-only resolver also covers its `codemode` extension tool without registering or replacing that tool; a build without `registerToolRenderer` reports the adapter as unavailable rather than claiming arbitrary custom-tool coverage.
 
 | Policy class | Pi transcript path | Calm result (baseline verified on Pi 0.81.1 through 0.82.0; newer evidence noted per row) |
 | --- | --- | --- |
@@ -226,8 +227,8 @@ The test fixture enumerates every class below through the centralized policy, an
 | `genuine-agent-response` | Assistant text in `AssistantMessageComponent` | Visible. |
 | `assistant-working-note` | Assistant text in an `AssistantMessageComponent` message the model did not end its response with, identified by its own `stopReason` of `toolUse`, or of `length` with tool calls present | Each settled text block follows the cross-harness preservation contract in [`calm.md`](calm.md); hidden blocks are removed from the shallow presentation copy before layout, a `toolUse` message carrying only short narration occupies zero rows (verified on Pi 0.84.1), and a still-streaming `pending` message is never filtered. |
 | `assistant-thinking` | Thinking content in `AssistantMessageComponent` | Collapsed reasoning is removed from the shallow presentation copy before layout and occupies zero rows; explicit expansion renders the original reasoning. |
-| `assistant-tool-call` | `ToolExecutionComponent` | Seven built-ins, `fm_watch_arm_pi`, `fm_branch_outcomes`, and `fm_branch_processed` hidden; other arbitrary custom tools remain an unsupported boundary. |
-| `tool-result` | `ToolExecutionComponent` | Text results for the controlled tools hidden; other arbitrary custom results remain an unsupported boundary. |
+| `assistant-tool-call` | `ToolExecutionComponent` | Seven built-ins, `fm_watch_arm_pi`, `fm_branch_outcomes`, and `fm_branch_processed` retain the earlier baseline; Pi's `codemode` tool is hidden through `registerToolRenderer` (rendering and TUI verified on installed Pi 1.4.0); other arbitrary custom tools remain unsupported. |
+| `tool-result` | `ToolExecutionComponent` | Text results for the controlled tools retain the earlier baseline; `codemode` results also hide on installed Pi 1.4.0; other arbitrary custom results remain unsupported. |
 | `tool-image` | Image children appended outside tool renderer slots | Unsupported boundary; remains visible. |
 | `user-bash` | `BashExecutionComponent` for `!` and `!!` | Unsupported boundary; remains visible. |
 | `skill-invocation` | `SkillInvocationMessageComponent` plus parsed user text | Unsupported boundary; remains visible. |

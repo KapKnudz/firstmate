@@ -18,6 +18,12 @@ WATCH_EXT="$ROOT/.pi/extensions/fm-primary-pi-watch.ts"
 OPERATIONAL_INPUT="$ROOT/bin/fm-operational-input.sh"
 PI_OPERATIONAL_INPUT="$ROOT/.pi/extensions/lib/fm-operational-input.ts"
 PI_PACKAGE_DIR=${FM_PI_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}
+PI_NODE_MODULES_DIR=$(dirname "$(dirname "$PI_PACKAGE_DIR")")
+PI_TUI_PACKAGE_DIR="$PI_NODE_MODULES_DIR/@earendil-works/pi-tui"
+PI_TYPEBOX_PACKAGE_DIR="$PI_NODE_MODULES_DIR/typebox"
+if [ ! -d "$PI_TUI_PACKAGE_DIR" ]; then PI_TUI_PACKAGE_DIR=$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui; fi
+if [ ! -d "$PI_TYPEBOX_PACKAGE_DIR" ]; then PI_TYPEBOX_PACKAGE_DIR=$PI_PACKAGE_DIR/node_modules/typebox; fi
+export PI_TUI_PACKAGE_DIR PI_TYPEBOX_PACKAGE_DIR
 TMUX_SOCKET="fm-calm-$$"
 TMUX_SESSION="fm-calm-e2e"
 # Verified against Pi 0.81.1 and 0.82.0 (docs/calm-mode-feasibility.md). This is
@@ -208,8 +214,8 @@ test_home_resolution() {
   cp "$WORKING_SHIP_SPRITE" "$fixture/project/.pi/extensions/lib/fm-calm-working-ship-sprite.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/project/.pi/extensions/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/project/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/project/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/project/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/project/package.json"
 
   out=$(cd "$fixture/launch-cwd" && \
@@ -237,6 +243,7 @@ function registerCalm() {
       if (name === "calm") calmCommand = command;
     },
     registerEntryRenderer() {},
+    registerToolRenderer() {},
     registerTool() {},
     getAllTools() {
       return [];
@@ -333,8 +340,8 @@ test_pi_compat_degraded_adapter() {
   cp "$WORKING_SHIP_SPRITE" "$fixture/project/.pi/extensions/lib/fm-calm-working-ship-sprite.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/project/.pi/extensions/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/project/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/project/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/project/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/project/package.json"
 
   out=$(cd "$fixture/project" && \
@@ -370,6 +377,7 @@ const pi = {
     if (name === "calm") calmCommand = command;
   },
   registerEntryRenderer() {},
+  registerToolRenderer() {},
   registerTool() {},
 };
 
@@ -494,8 +502,8 @@ test_queued_operational_rows() {
   cp "$VISIBILITY" "$fixture/lib/fm-calm-visibility.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/package.json"
   # Lets the fixture take the classifier away mid-run, the way a missing or broken
   # bin/fm-operational-input.sh would.
@@ -815,8 +823,8 @@ test_builtin_gate_load_time() {
   cp "$WORKING_SHIP_SPRITE" "$fixture/project/.pi/extensions/lib/fm-calm-working-ship-sprite.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/project/.pi/extensions/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/project/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/project/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/project/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/project/package.json"
   printf '%s\n' on >"$fixture/home-on/config/calm"
 
@@ -838,6 +846,7 @@ function fakePi() {
     },
     registerCommand() {},
     registerEntryRenderer() {},
+    registerToolRenderer() {},
     registerTool(tool) {
       tools.push(tool);
     },
@@ -904,8 +913,8 @@ test_calm_activation_collision_and_regression_bound() {
   cp "$WORKING_SHIP_SPRITE" "$fixture/project/.pi/extensions/lib/fm-calm-working-ship-sprite.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/project/.pi/extensions/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/project/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/project/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/project/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/project/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/project/package.json"
   printf '%s\n' 'export default function () {}' >"$fixture/project/foreign-bash-extension.ts"
 
@@ -924,7 +933,7 @@ const { ToolExecutionComponent } = await import(
 );
 const { initTheme } = await import(pathToFileURL(`${packageRoot}/dist/modes/interactive/theme/theme.js`).href);
 const { setCapabilities } = await import(
-  pathToFileURL(`${packageRoot}/node_modules/@earendil-works/pi-tui/dist/index.js`).href
+  pathToFileURL(`${process.env.PI_TUI_PACKAGE_DIR}/dist/index.js`).href
 );
 initTheme("dark");
 setCapabilities({ images: null, trueColor: true, hyperlinks: false });
@@ -964,6 +973,7 @@ const pi = {
     if (name === "calm") calmCommand = command;
   },
   registerEntryRenderer() {},
+  registerToolRenderer() {},
   // Mirrors Pi's own arbitration: first registrant for a name keeps it, silently.
   registerTool(tool) {
     if (!registry.has(tool.name)) {
@@ -1125,8 +1135,8 @@ test_rendering_and_session_lifecycle() {
   cp "$ROOT/.pi/extensions/lib/fm-async-exec.ts" "$fixture/lib/fm-async-exec.ts"
   cp "$WATCH_EXT" "$fixture/fm-primary-pi-watch.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/package.json"
   cat >"$fixture/operational-input-probe.sh" <<'SH'
 #!/usr/bin/env bash
@@ -1154,7 +1164,7 @@ const [{ AssistantMessageComponent }, { CustomEntryComponent }, { ToolExecutionC
   import(pathToFileURL(`${packageRoot}/dist/modes/interactive/components/user-message.js`).href),
   import(pathToFileURL(`${packageRoot}/dist/modes/interactive/interactive-mode.js`).href),
   import(pathToFileURL(`${packageRoot}/dist/modes/interactive/theme/theme.js`).href),
-  import(pathToFileURL(`${packageRoot}/node_modules/@earendil-works/pi-tui/dist/index.js`).href),
+  import(pathToFileURL(`${process.env.PI_TUI_PACKAGE_DIR}/dist/index.js`).href),
   import(pathToFileURL(`${packageRoot}/dist/core/export-html/tool-renderer.js`).href),
   // The calm-off equivalence baseline needs each built-in's REAL stock renderers.
   // Pi 0.84 and older silently substituted the built-in definition when a
@@ -1163,6 +1173,9 @@ const [{ AssistantMessageComponent }, { CustomEntryComponent }, { ToolExecutionC
   // definition-less row now renders the generic text fallback instead.
   import(pathToFileURL(`${packageRoot}/dist/core/tools/index.js`).href),
 ]);
+const { createCodemodeToolDefinition } = await import(
+  pathToFileURL(`${packageRoot}/dist/extensions/codemode/tool.js`).href
+);
 const stockDefinitions = {
   read: createReadToolDefinition,
   bash: createBashToolDefinition,
@@ -1178,6 +1191,7 @@ setCapabilities({ images: null, trueColor: true, hyperlinks: false });
 const tools = [];
 const handlers = new Map();
 const entryRenderers = new Map();
+const toolRendererResolvers = [];
 const eventListeners = new Map();
 let calmCommand;
 const pi = {
@@ -1202,6 +1216,9 @@ const pi = {
   registerEntryRenderer(customType, renderer) {
     entryRenderers.set(customType, renderer);
   },
+  registerToolRenderer(resolver) {
+    toolRendererResolvers.push(resolver);
+  },
   registerTool(tool) {
     const existingIndex = tools.findIndex((existing) => existing.name === tool.name);
     if (existingIndex === -1) tools.push(tool);
@@ -1219,7 +1236,13 @@ const pi = {
 };
 const extension = await import(`${pathToFileURL(process.env.EXT).href}?test=${Date.now()}`);
 extension.default(pi);
-const visibility = await import(`${pathToFileURL(`${process.cwd()}/lib/fm-calm-visibility.ts`).href}?policy=${Date.now()}`);
+function resolveToolRenderers(name, base) {
+  const resolve = (index) => index < toolRendererResolvers.length
+    ? toolRendererResolvers[index](name, () => resolve(index + 1))
+    : base();
+  return resolve(0);
+}
+const visibility = await import(pathToFileURL(`${process.cwd()}/lib/fm-calm-visibility.ts`).href);
 const operationalInput = await import(`${pathToFileURL(`${process.cwd()}/lib/fm-operational-input.ts`).href}?input=${Date.now()}`);
 
 // Registration is gated on config/calm at load (see fm-calm.ts's file header); this
@@ -1367,6 +1390,184 @@ for (const [name, args, result] of cases) {
     throw new Error(`${name} expanded rendering changed while calm mode was off`);
   }
   rows.push({ name, baseline, actual });
+}
+
+const codemodeDefinition = createCodemodeToolDefinition();
+const codemodeExecute = codemodeDefinition.execute;
+const codemodeArgs = {
+  code: 'const contents = await tools.read({ path: "synthetic.txt" });\ntext(contents);',
+};
+const wrappedCodemodeOutput = `WRAPPED_CODEMODE_OUTPUT_START ${"x".repeat(180)} WRAPPED_CODEMODE_OUTPUT_END`;
+const codemodeFixtures = [
+  {
+    name: "partial",
+    partial: true,
+    result: {
+      content: [],
+      details: { calls: [{ name: "read", args: '{"path":"synthetic.txt"}', status: "running" }] },
+      isError: false,
+    },
+  },
+  {
+    name: "completed",
+    partial: false,
+    result: {
+      content: [
+        { type: "text", text: "Script completed\nWall time 0.120 seconds\nOutput:\n" },
+        { type: "text", text: wrappedCodemodeOutput },
+      ],
+      details: { calls: [{ name: "read", args: '{"path":"synthetic.txt"}', status: "ok", durationMs: 12 }] },
+      isError: false,
+      durationMs: 120,
+    },
+  },
+  {
+    name: "error",
+    partial: false,
+    result: {
+      content: [
+        { type: "text", text: "Script failed\nWall time 0.120 seconds\nOutput:\n" },
+        { type: "text", text: "CODEMODE_SYNTHETIC_ERROR" },
+      ],
+      details: { calls: [{ name: "read", args: '{"path":"synthetic.txt"}', status: "error", error: "CODEMODE_SYNTHETIC_ERROR", durationMs: 12 }] },
+      isError: true,
+      durationMs: 120,
+    },
+  },
+];
+const codemodeStoredEntries = [
+  {
+    role: "assistant",
+    content: [{ type: "toolCall", id: "stored-codemode", name: "codemode", arguments: codemodeArgs }],
+  },
+  {
+    role: "toolResult",
+    toolCallId: "stored-codemode",
+    toolName: "codemode",
+    content: codemodeFixtures[1].result.content,
+    details: codemodeFixtures[1].result.details,
+    isError: false,
+    durationMs: 120,
+  },
+];
+const codemodeStoredBefore = JSON.stringify(codemodeStoredEntries);
+const normalizeCodemodeRows = (lines) => lines
+  .join("\n")
+  .replace(/\x1b\[[0-9;]*m/g, "")
+  .replace(/Elapsed [^\n]*/g, "Elapsed <timer>");
+function createCodemodeRow(definition, fixture, expanded, toolCallId) {
+  const row = new ToolExecutionComponent(
+    "codemode",
+    toolCallId,
+    codemodeArgs,
+    { showImages: false },
+    definition,
+    renderUi,
+    process.cwd(),
+  );
+  row.markExecutionStarted();
+  row.setArgsComplete();
+  row.updateResult(fixture.result, fixture.partial);
+  row.setExpanded(expanded);
+  return row;
+}
+const codemodeRows = [];
+const codemodeComparisons = [];
+visibility.setCalmPresentation(false);
+visibility.setCalmStockExportRendering(false);
+for (const fixture of codemodeFixtures) {
+  for (const rowExpanded of [false, true]) {
+    const stock = createCodemodeRow(
+      codemodeDefinition,
+      fixture,
+      rowExpanded,
+      `stock-${fixture.name}-${rowExpanded}`,
+    );
+    const actual = createCodemodeRow(
+      resolveToolRenderers("codemode", () => codemodeDefinition),
+      fixture,
+      rowExpanded,
+      `calm-${fixture.name}-${rowExpanded}`,
+    );
+    codemodeRows.push(actual);
+    codemodeComparisons.push({ fixture, expanded: rowExpanded, stock, actual });
+    if (normalizeCodemodeRows(actual.render(56)) !== normalizeCodemodeRows(stock.render(56))) {
+      throw new Error(
+        `Calm-off codemode ${fixture.name} rendering changed from Pi stock (${rowExpanded ? "expanded" : "collapsed"})\n` +
+        `actual:\n${normalizeCodemodeRows(actual.render(56))}\nstock:\n${normalizeCodemodeRows(stock.render(56))}`,
+      );
+    }
+  }
+}
+const completedCollapsed = normalizeCodemodeRows(
+  codemodeComparisons.find((item) => item.fixture.name === "completed" && !item.expanded).stock.render(56),
+);
+const completedExpanded = normalizeCodemodeRows(
+  codemodeComparisons.find((item) => item.fixture.name === "completed" && item.expanded).stock.render(56),
+);
+const partialDisplay = normalizeCodemodeRows(
+  codemodeComparisons.find((item) => item.fixture.name === "partial" && !item.expanded).stock.render(56),
+);
+const errorDisplay = normalizeCodemodeRows(
+  codemodeComparisons.find((item) => item.fixture.name === "error" && item.expanded).stock.render(56),
+);
+if (!completedCollapsed.includes("codemode") || !completedCollapsed.includes("✓ read")) {
+  throw new Error(`installed codemode renderer did not show its script title and nested call: ${completedCollapsed}`);
+}
+if (!completedExpanded.includes("WRAPPED_CODEMODE_OUTPUT_END") || !completedExpanded.includes("Took 0.1s")) {
+  throw new Error(`installed codemode renderer did not show expanded wrapped output and timer: ${completedExpanded}`);
+}
+if (!partialDisplay.includes("Elapsed <timer>") || !partialDisplay.includes("read")) {
+  throw new Error(`installed codemode renderer did not show partial nested-call and timer state: ${partialDisplay}`);
+}
+if (!errorDisplay.includes("CODEMODE_SYNTHETIC_ERROR")) {
+  throw new Error(`installed codemode renderer did not show the error result: ${errorDisplay}`);
+}
+visibility.setCalmPresentation(true);
+for (const comparison of codemodeComparisons) {
+  comparison.actual.setExpanded(!comparison.expanded);
+  comparison.actual.setExpanded(comparison.expanded);
+  if (comparison.actual.render(56).length !== 0) {
+    throw new Error(`Calm left codemode ${comparison.fixture.name} content visible (${comparison.expanded ? "expanded" : "collapsed"})`);
+  }
+}
+for (const fixture of codemodeFixtures) {
+  for (const rowExpanded of [false, true]) {
+    const restored = createCodemodeRow(
+      resolveToolRenderers("codemode", () => codemodeDefinition),
+      fixture,
+      rowExpanded,
+      `restored-${fixture.name}-${rowExpanded}`,
+    );
+    const stock = createCodemodeRow(
+      codemodeDefinition,
+      fixture,
+      rowExpanded,
+      `restored-stock-${fixture.name}-${rowExpanded}`,
+    );
+    codemodeRows.push(restored);
+    codemodeComparisons.push({ fixture, expanded: rowExpanded, stock, actual: restored });
+    if (restored.render(56).length !== 0) {
+      throw new Error(`Calm restored codemode ${fixture.name} content visible (${rowExpanded ? "expanded" : "collapsed"})`);
+    }
+  }
+}
+visibility.setCalmPresentation(false);
+for (const comparison of codemodeComparisons) {
+  comparison.actual.setExpanded(!comparison.expanded);
+  comparison.actual.setExpanded(comparison.expanded);
+  if (normalizeCodemodeRows(comparison.actual.render(56)) !== normalizeCodemodeRows(comparison.stock.render(56))) {
+    throw new Error(`Calm-off codemode redraw did not restore Pi stock ${comparison.fixture.name} rendering`);
+  }
+}
+if (tools.some((tool) => tool.name === "codemode") || codemodeDefinition.execute !== codemodeExecute) {
+  throw new Error("Calm replaced codemode execution or registered it instead of using the renderer-only API");
+}
+for (const comparison of codemodeComparisons) {
+  if (comparison.fixture.partial) {
+    comparison.actual.updateResult(codemodeFixtures[1].result, false);
+    comparison.stock.updateResult(codemodeFixtures[1].result, false);
+  }
 }
 
 const watchPi = {
@@ -1546,6 +1747,7 @@ const commandContext = {
     setToolsExpanded(value) {
       expanded = value;
       for (const row of rows) row.actual.setExpanded(value);
+      for (const row of codemodeRows) row.setExpanded(value);
       watchActual.setExpanded(value);
       customRow.setExpanded(value);
       imageRow.setExpanded(value);
@@ -1664,7 +1866,10 @@ for (const { name, actual } of rows) {
 // passes only the old key reports every tool as missing. Supply both; each
 // release reads the key it knows and renders the same wrapped definitions.
 function createInstalledToolHtmlRenderer() {
-  const lookup = (name) => tools.find((tool) => tool.name === name);
+  const lookup = (name) => resolveToolRenderers(
+    name,
+    () => tools.find((tool) => tool.name === name) ?? (name === "codemode" ? codemodeDefinition : undefined),
+  );
   return createToolHtmlRenderer({
     getToolDefinition: lookup,
     getToolRenderers: lookup,
@@ -1679,6 +1884,7 @@ async function assertStockHtmlRendering(command, submitData) {
   const exportCases = [
     ...cases.filter(([toolName]) => toolName === "grep" || toolName === "find"),
     ["fm_watch_arm_pi", watchArgs, watchResult],
+    ["codemode", codemodeArgs, codemodeFixtures[1].result],
   ];
   for (const [name, args, result] of exportCases) {
     const toolCallId = `${command}-${name}`;
@@ -1692,6 +1898,13 @@ async function assertStockHtmlRendering(command, submitData) {
     );
     if (!callHtml || !resultHtml?.expanded) {
       throw new Error(`${name} disappeared from ${command} HTML while calm mode was on`);
+    }
+    if (name === "codemode" && (
+      !callHtml.includes("tools.read") ||
+      !resultHtml.expanded.includes("WRAPPED_CODEMODE_OUTPUT_END") ||
+      !resultHtml.expanded.includes("read")
+    )) {
+      throw new Error(`${name} lost original script, nested-call, or expanded output content during ${command} export`);
     }
   }
   editorText = "";
@@ -1743,6 +1956,9 @@ if (assistantThinkingTool.render(100).length !== 0) {
 }
 if (JSON.stringify(sessionEntries) !== entriesBefore) {
   throw new Error("calm mode changed session entries or model context");
+}
+if (JSON.stringify(codemodeStoredEntries) !== codemodeStoredBefore) {
+  throw new Error("Calm changed the stored codemode call or result message");
 }
 
 for (const { baseline } of rows) baseline.setExpanded(expanded);
@@ -1846,8 +2062,8 @@ test_calm_mid_turn_working_notes() {
   cp "$WORKING_SHIP_SPRITE" "$fixture/lib/fm-calm-working-ship-sprite.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/package.json"
 
   output_file="$fixture/node-output"
@@ -1859,7 +2075,7 @@ const packageRoot = process.env.PI_PACKAGE_DIR;
 const [{ AssistantMessageComponent }, { initTheme }, { setCapabilities }] = await Promise.all([
   import(pathToFileURL(`${packageRoot}/dist/modes/interactive/components/assistant-message.js`).href),
   import(pathToFileURL(`${packageRoot}/dist/modes/interactive/theme/theme.js`).href),
-  import(pathToFileURL(`${packageRoot}/node_modules/@earendil-works/pi-tui/dist/index.js`).href),
+  import(pathToFileURL(`${process.env.PI_TUI_PACKAGE_DIR}/dist/index.js`).href),
 ]);
 initTheme("dark");
 setCapabilities({ images: null, trueColor: true, hyperlinks: false });
@@ -1899,6 +2115,7 @@ async function loadCalmExtension() {
       if (name === "calm") calmCommand = command;
     },
     registerEntryRenderer() {},
+    registerToolRenderer() {},
     registerTool(tool) {
       registeredTools.push(tool.name);
     },
@@ -2991,8 +3208,8 @@ test_working_ship_geometry_and_lifecycle() {
   cp "$WORKING_SHIP_SPRITE" "$fixture/lib/fm-calm-working-ship-sprite.ts"
   cp "$PI_OPERATIONAL_INPUT" "$fixture/lib/fm-operational-input.ts"
   ln -s "$PI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-coding-agent"
-  ln -s "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui" "$fixture/node_modules/@earendil-works/pi-tui"
-  ln -s "$PI_PACKAGE_DIR/node_modules/typebox" "$fixture/node_modules/typebox"
+  ln -s "$PI_TUI_PACKAGE_DIR" "$fixture/node_modules/@earendil-works/pi-tui"
+  ln -s "$PI_TYPEBOX_PACKAGE_DIR" "$fixture/node_modules/typebox"
   printf '%s\n' '{"type":"module"}' >"$fixture/package.json"
 
   out=$(cd "$fixture" && EXT="$fixture/fm-calm.ts" FM_HOME="$fixture/home" PI_PACKAGE_DIR="$PI_PACKAGE_DIR" STANDALONE_CALM_SHIP="$standalone_ship" node --input-type=module 2>&1 <<'JS'
@@ -3001,7 +3218,7 @@ import { pathToFileURL } from "node:url";
 const packageRoot = process.env.PI_PACKAGE_DIR;
 const [{ initTheme, theme }, { visibleWidth, setCapabilities }] = await Promise.all([
   import(pathToFileURL(`${packageRoot}/dist/modes/interactive/theme/theme.js`).href),
-  import(pathToFileURL(`${packageRoot}/node_modules/@earendil-works/pi-tui/dist/index.js`).href),
+  import(pathToFileURL(`${process.env.PI_TUI_PACKAGE_DIR}/dist/index.js`).href),
 ]);
 initTheme("dark");
 setCapabilities({ images: null, trueColor: true, hyperlinks: false });
@@ -3592,6 +3809,7 @@ const pi = {
     if (name === "calm") calmCommand = command;
   },
   registerEntryRenderer() {},
+  registerToolRenderer() {},
   registerTool() {},
   getAllTools() {
     return [];
@@ -4275,6 +4493,8 @@ TS
 {"type":"message","id":"a0000014","parentId":"a0000013","timestamp":"$now","message":{"role":"user","content":[{"type":"text","text":"Ordinary captain text before \u2063FIRSTMATE_OP: v1 watcher: EMBEDDED_CURRENT_NEAR_MISS"}],"timestamp":14}}
 {"type":"message","id":"a0000015","parentId":"a0000014","timestamp":"$now","message":{"role":"user","content":[{"type":"text","text":"\u2063ordinary captain text after unrelated separator"}],"timestamp":15}}
 {"type":"message","id":"a0000016","parentId":"a0000015","timestamp":"$now","message":{"role":"assistant","content":[{"type":"text","text":"The deterministic tool example is complete."}],"api":"anthropic-messages","provider":"anthropic","model":"claude-sonnet-4-5","usage":{"input":2,"output":1,"cacheRead":0,"cacheWrite":0,"totalTokens":3,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"stop","timestamp":16}}
+{"type":"message","id":"a0000017","parentId":"a0000016","timestamp":"$now","message":{"role":"assistant","content":[{"type":"toolCall","id":"call_calm_codemode_e2e","name":"codemode","arguments":{"code":"text(1); // CALM_CODEMODE_RESTORED_SCRIPT"}}],"api":"anthropic-messages","provider":"anthropic","model":"claude-sonnet-4-5","usage":{"input":2,"output":1,"cacheRead":0,"cacheWrite":0,"totalTokens":3,"cost":{"input":0,"output":0,"cacheRead":0,"cacheWrite":0,"total":0}},"stopReason":"toolUse","timestamp":17}}
+{"type":"message","id":"a0000018","parentId":"a0000017","timestamp":"$now","message":{"role":"toolResult","toolCallId":"call_calm_codemode_e2e","toolName":"codemode","content":[{"type":"text","text":"CALM_CODEMODE_RESULT_HEADER"},{"type":"text","text":"CALM_CODEMODE_RESTORED_RESULT"}],"details":{"calls":[{"name":"read","args":"synthetic.txt","status":"ok","durationMs":1}]},"isError":false,"durationMs":1,"timestamp":18}}
 JSON
 
   tmux -L "$TMUX_SOCKET" new-session -d -s "$TMUX_SESSION" -x 180 -y 44 \
@@ -4283,6 +4503,8 @@ JSON
     || fail "Pi calm E2E did not reach the restored session transcript"
   assert_contains "$(cat "$default_snapshot")" "CALM_E2E_OUTPUT" "calm mode was not off by default"
   assert_contains "$(cat "$default_snapshot")" "fm_watch_arm_pi" "Calm-off transcript did not show the Firstmate watcher tool"
+  assert_contains "$(cat "$default_snapshot")" "CALM_CODEMODE_RESTORED_SCRIPT" "Calm-off transcript did not show the restored codemode script"
+  assert_contains "$(cat "$default_snapshot")" "CALM_CODEMODE_RESTORED_RESULT" "Calm-off transcript did not show the restored codemode result"
   assert_contains "$(cat "$default_snapshot")" "FIRSTMATE WATCHER WAKE: signal: /tmp/probe.status" "Calm-off transcript did not show the synthetic Firstmate presentation row"
   assert_contains "$(cat "$default_snapshot")" "Thinking..." "reasoning fixture did not render Pi's collapsed thinking label"
   assert_contains "$(cat "$default_snapshot")" "fm-calm.ts" "project-local Pi calm extension did not auto-load"
@@ -4306,13 +4528,11 @@ JSON
     # (see below) lengthen the transcript enough to push earlier genuine content, such
     # as the original user prompt, above the plain viewport.
     tmux -L "$TMUX_SOCKET" capture-pane -p -t "$TMUX_SESSION" -S -600 >"$hidden_snapshot"
-    # Wait for the redraw this block actually asserts: the collapsed-thinking adapter
-    # (unconditional, unaffected by the built-in tool gate below) hides, and the
-    # retained genuine rows are back on screen. Built-in tool rows from before this
-    # first-ever activation are a separate, documented exception (see fm-calm.ts's
-    # file header and docs/calm.md): Pi gives no way to re-point an already-rendered
-    # tool row at a definition registered later, so CALM_E2E_OUTPUT and friends stay
-    # on screen through this whole redraw rather than disappearing with it.
+    # Wait for the redraw this block actually asserts: collapsed thinking hides,
+    # retained genuine rows return, and the codemode renderer resolver hides the
+    # restored codemode row even though it was constructed before this toggle.
+    # Calm's seven built-in wrappers retain their separately documented first-toggle
+    # bound because Pi has no way to re-point those rows at a later tool definition.
     if ! grep -Fq "Thinking..." "$hidden_snapshot" &&
       ! grep -Fq "/calm" "$hidden_snapshot" &&
       ! grep -Fq "I will run one command." "$hidden_snapshot" &&
@@ -4323,11 +4543,12 @@ JSON
     sleep 0.05
     active_screen_wait=$((active_screen_wait + 1))
   done
-  # This session's built-in tool rows (bash/grep/find) were all rendered during the
-  # initial session restore, before Calm's first-ever activation in this session had
+  # This session's wrapped built-in tool rows (bash/grep/find) were all rendered during
+  # the initial session restore, before Calm's first-ever activation in this session had
   # claimed any built-in name; they keep their stock presentation for the rest of the
-  # session. This is the captain-accepted, documented bound on the collision fix (see
-  # fm-calm.ts's file header and docs/calm.md): the alternative was letting Calm
+  # session. The codemode resolver does not have that limitation and is checked below.
+  # This is the documented bound on the built-in collision fix (see fm-calm.ts's file
+  # header and docs/calm.md): the alternative was letting Calm
   # silently disable a differently loaded extension's own bash/read/etc override. A
   # fresh built-in tool call made after this same activation does hide correctly;
   # that path is covered by this file's own test_calm_activation_collision_and
@@ -4337,6 +4558,8 @@ JSON
   [ "$(cat "$home/config/calm")" = on ] || fail "/calm did not persist its active choice"
   assert_contains "$(cat "$hidden_snapshot")" "CALM_EXPORT_GREP" "a pre-activation grep row unexpectedly hid; the documented bound regressed"
   assert_contains "$(cat "$hidden_snapshot")" "CALM_EXPORT_FIND" "a pre-activation find row unexpectedly hid; the documented bound regressed"
+  assert_not_contains "$(cat "$hidden_snapshot")" "CALM_CODEMODE_RESTORED_SCRIPT" "/calm left the restored codemode script visible"
+  assert_not_contains "$(cat "$hidden_snapshot")" "CALM_CODEMODE_RESTORED_RESULT" "/calm left the restored codemode result visible"
   assert_not_contains "$(cat "$hidden_snapshot")" "Thinking..." "/calm left collapsed thinking labels in the transcript"
   assert_not_contains "$(cat "$hidden_snapshot")" "fm_watch_arm_pi" "/calm left the Firstmate watcher tool call shell in the transcript"
   assert_not_contains "$(cat "$hidden_snapshot")" "watcher: started Pi extension arm child" "/calm left the Firstmate watcher tool result in the transcript"
@@ -4471,10 +4694,13 @@ const html = require("node:fs").readFileSync(process.argv[2], "utf8");
 const match = html.match(/<script id="session-data" type="application\/json">([^<]+)<\/script>/);
 if (!match) process.exit(1);
 const session = JSON.parse(Buffer.from(match[1], "base64").toString("utf8"));
-for (const id of ["call_grep_e2e", "call_find_e2e", "call_watch_e2e"]) {
+for (const id of ["call_grep_e2e", "call_find_e2e", "call_watch_e2e", "call_calm_codemode_e2e"]) {
   const rendered = session.renderedTools?.[id];
   if (!rendered?.callHtml || !rendered?.resultHtmlExpanded) process.exit(1);
 }
+const codemodeHtml = session.renderedTools.call_calm_codemode_e2e;
+if (!codemodeHtml.callHtml.includes("CALM_CODEMODE_RESTORED_SCRIPT") ||
+  !codemodeHtml.resultHtmlExpanded.includes("CALM_CODEMODE_RESTORED_RESULT")) process.exit(1);
 const entries = session.session?.entries ?? session.entries ?? [];
 const serialized = JSON.stringify(entries);
 if (!serialized.includes("firstmate-synthetic-input") || !serialized.includes("/tmp/probe.status")) process.exit(1);
@@ -4546,6 +4772,9 @@ function stripHiddenHookMessages(html) {
   return out;
 }
 const visible = stripHiddenHookMessages(messages);
+if (!visible.includes("CALM_CODEMODE_RESTORED_SCRIPT") || !visible.includes("CALM_CODEMODE_RESTORED_RESULT")) {
+  throw new Error("stock HTML export lost the restored codemode script or result");
+}
 if (visible.includes('<div class="hook-message"') || visible.includes("hook-message")) {
   throw new Error("a visible hook message leaked into the conversation column");
 }
@@ -4599,6 +4828,8 @@ JS
   wait_for_text "$restored_snapshot" "/tmp/active-probe.status" \
     || fail "second /calm did not restore a synthetic row received while Calm was active"
   assert_contains "$(cat "$restored_snapshot")" "fm_watch_arm_pi" "second /calm did not restore the Firstmate watcher tool shell"
+  assert_contains "$(cat "$restored_snapshot")" "CALM_CODEMODE_RESTORED_SCRIPT" "second /calm did not restore the codemode script"
+  assert_contains "$(cat "$restored_snapshot")" "CALM_CODEMODE_RESTORED_RESULT" "second /calm did not restore the codemode result"
   assert_contains "$(cat "$restored_snapshot")" "FIRSTMATE WATCHER WAKE: signal: /tmp/probe.status" "second /calm did not restore the synthetic Firstmate user row"
   for restored in \
     CURRENT_WATCHER_E2E \
@@ -4955,6 +5186,8 @@ JS
   wait_for_text "$restarted_snapshot" "CALM_WORKING_E2E_RESPONSE" \
     || fail "Pi did not restore the persisted session after restart"
   assert_not_contains "$(cat "$restarted_snapshot")" "CALM_E2E_OUTPUT" "restart/resume reset Calm and restored a tool row"
+  assert_not_contains "$(cat "$restarted_snapshot")" "CALM_CODEMODE_RESTORED_SCRIPT" "restart/resume reset Calm and restored the codemode script"
+  assert_not_contains "$(cat "$restarted_snapshot")" "CALM_CODEMODE_RESTORED_RESULT" "restart/resume reset Calm and restored the codemode result"
   assert_not_contains "$(cat "$restarted_snapshot")" "fm_watch_arm_pi" "restart/resume reset Calm and restored the Firstmate watcher tool"
   assert_not_contains "$(cat "$restarted_snapshot")" "FIRSTMATE WATCHER WAKE: signal: /tmp/probe.status" "restart/resume reset Calm and restored a legacy presentation row"
   for hidden in \
@@ -4975,6 +5208,8 @@ JS
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" M-s
   wait_for_text "$resumed_restored_snapshot" "CALM_E2E_OUTPUT" \
     || fail "/calm after restart did not restore ordinary transcript rows"
+  assert_contains "$(cat "$resumed_restored_snapshot")" "CALM_CODEMODE_RESTORED_SCRIPT" "/calm after restart did not restore the codemode script"
+  assert_contains "$(cat "$resumed_restored_snapshot")" "CALM_CODEMODE_RESTORED_RESULT" "/calm after restart did not restore the codemode result"
   [ "$(cat "$home/config/calm")" = off ] || fail "/calm after restart did not persist the inactive choice"
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" -l "/quit"
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" M-s
