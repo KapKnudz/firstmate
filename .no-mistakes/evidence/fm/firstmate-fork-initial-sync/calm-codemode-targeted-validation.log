@@ -1,0 +1,5 @@
+Targeted Calm codemode validation
+pi=1.4.0
+tmux=tmux 3.7c
+skip: installed @earendil-works/pi-coding-agent package not found
+ok - real Pi partial codemode invalidation during export is synchronously repainted hidden when Calm resumes

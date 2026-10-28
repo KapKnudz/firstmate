@@ -1,0 +1,11 @@
+piVersion=1.4.0
+calmOffShowsRestoredCodemodeCall=true
+calmOffShowsRestoredCodemodeResult=true
+calmOnHidesRestoredCodemodeCall=true
+calmOnHidesRestoredCodemodeResult=true
+stockExportContainsPartialCodemodeCall=true
+stockExportContainsCodemodeLabel=true
+postExportTuiShowsExportConfirmation=true
+postExportTuiSettled=true
+postExportTuiHidesPartialCodemodeCall=true
+raceCallHtml=<div class="ansi-line"><span style="font-weight:bold">codemode</span> </div><div class="ansi-line"><span style="color:#000080">const</span> result = <span style="color:#000080">await</span> tools.bash({ <span style="color:#008080">command</span>: <span style="color:#008000">&quot;sleep 5; printf CALM_CODEMODE_EXPORT_RACE_DELAY_DONE&quot;</span> </div><div class="ansi-line">}); </div><div class="ansi-line">text(result.output); <span style="opacity:0.6">// CALM_CODEMODE_EXPORT_RACE_SCRIPT</span> </div>

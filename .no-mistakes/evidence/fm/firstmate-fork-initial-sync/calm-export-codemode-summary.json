@@ -1,0 +1,6 @@
+{
+  "contract": "Pi /export rendered codemode tool content while Calm was active",
+  "callContainsRestoredScript": true,
+  "resultContainsRestoredResult": true,
+  "resultContainsNestedRead": true
+}
