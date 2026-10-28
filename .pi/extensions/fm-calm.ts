@@ -103,9 +103,10 @@ const refreshCodemodeShell = (
     : context.isError
       ? (text: string) => theme.bg("toolErrorBg", text)
       : (text: string) => theme.bg("toolSuccessBg", text);
-  const shell = state.shell ?? new Box(1, 1, background);
+  const shell = state.shell ?? new Box(context.outputPad, 1, background);
   state.shell = shell;
   shell.setBgFn(background);
+  shell.setPaddingX(context.outputPad);
   shell.clear();
   if (state.call) shell.addChild(state.call);
   if (state.result) shell.addChild(state.result);
@@ -255,6 +256,8 @@ export default function (pi: ExtensionAPI) {
       if (toolName !== "codemode") return next();
 
       const original = next();
+      if (!original?.renderCall || !original.renderResult) return original;
+
       const shells = new WeakMap<object, StandardShellState>();
       const shellFor = (context: RenderContext<any, any, any>): StandardShellState => {
         const rowState = context.state as object;
@@ -272,11 +275,11 @@ export default function (pi: ExtensionAPI) {
         renderCall(args, theme, context) {
           rememberCalmToolRow(context.state, context.invalidate);
           const state = shellFor(context);
-          const call = original?.renderCall?.(args, theme, {
+          const call = original.renderCall(args, theme, {
             ...context,
             lastComponent: state.call,
           });
-          if (exportRendering) return call ?? new Container();
+          if (exportRendering) return call;
           state.call = call;
           if (calmPresentationHides("assistant-tool-call")) return new Container();
           return refreshCodemodeShell(state, theme, context);
@@ -284,11 +287,11 @@ export default function (pi: ExtensionAPI) {
         renderResult(result, options, theme, context) {
           rememberCalmToolRow(context.state, context.invalidate);
           const state = shellFor(context);
-          const renderedResult = original?.renderResult?.(result, options, theme, {
+          const renderedResult = original.renderResult(result, options, theme, {
             ...context,
             lastComponent: state.result,
           });
-          if (exportRendering) return renderedResult ?? new Container();
+          if (exportRendering) return renderedResult;
           state.result = renderedResult;
           if (calmPresentationHides("tool-result")) return new Container();
           refreshCodemodeShell(state, theme, context);
@@ -343,9 +346,10 @@ export default function (pi: ExtensionAPI) {
         : context.isError
           ? (text: string) => theme.bg("toolErrorBg", text)
           : (text: string) => theme.bg("toolSuccessBg", text);
-      const shell = state.shell ?? new Box(1, 1, background);
+      const shell = state.shell ?? new Box(context.outputPad, 1, background);
       state.shell = shell;
       shell.setBgFn(background);
+      shell.setPaddingX(context.outputPad);
       shell.clear();
       if (state.call) shell.addChild(state.call);
       if (state.result) shell.addChild(state.result);

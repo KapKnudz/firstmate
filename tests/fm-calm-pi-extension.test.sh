@@ -1376,8 +1376,8 @@ const renderUi = { requestRender() {} };
 const rows = [];
 for (const [name, args, result] of cases) {
   const wrapped = tools.find((tool) => tool.name === name);
-  const baseline = new ToolExecutionComponent(name, `baseline-${name}`, args, { showImages: false }, stockDefinitions[name](process.cwd()), renderUi, process.cwd());
-  const actual = new ToolExecutionComponent(name, `wrapped-${name}`, args, { showImages: false }, wrapped, renderUi, process.cwd());
+  const baseline = new ToolExecutionComponent(name, `baseline-${name}`, args, { showImages: false, outputPad: 0 }, stockDefinitions[name](process.cwd()), renderUi, process.cwd());
+  const actual = new ToolExecutionComponent(name, `wrapped-${name}`, args, { showImages: false, outputPad: 0 }, wrapped, renderUi, process.cwd());
   for (const row of [baseline, actual]) {
     row.markExecutionStarted();
     row.setArgsComplete();
@@ -1488,27 +1488,61 @@ const codemodeResult = {
 const codemodeRows = [];
 const codemodeTextRows = [];
 const codemodeStockRows = [];
-for (const expanded of createCodemodeToolDefinition ? [false, true] : []) {
-  const codemodeExecutionProbe = createCodemodeToolDefinition();
-  const codemodeRenderers = resolveToolRenderers("codemode", () => codemodeExecutionProbe);
-  if (codemodeRenderers?.execute !== codemodeExecutionProbe.execute) {
-    throw new Error("Calm changed Pi's codemode execution function while resolving presentation");
+for (const outputPad of createCodemodeToolDefinition ? [0, 1] : []) {
+  for (const expanded of [false, true]) {
+    const codemodeExecutionProbe = createCodemodeToolDefinition();
+    const codemodeRenderers = resolveToolRenderers("codemode", () => codemodeExecutionProbe);
+    if (codemodeRenderers?.execute !== codemodeExecutionProbe.execute) {
+      throw new Error("Calm changed Pi's codemode execution function while resolving presentation");
+    }
+    const stock = new ToolExecutionComponent(
+      "codemode",
+      `codemode-stock-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      createCodemodeToolDefinition(),
+      renderUi,
+      process.cwd(),
+    );
+    const actual = new ToolExecutionComponent(
+      "codemode",
+      `codemode-calm-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      resolveToolRenderers("codemode", () => createCodemodeToolDefinition()),
+      renderUi,
+      process.cwd(),
+    );
+    for (const row of [stock, actual]) {
+      row.markExecutionStarted();
+      row.setArgsComplete();
+      row.updateResult(codemodeResult);
+      row.setExpanded(expanded);
+    }
+    if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
+      throw new Error(`Pi codemode rendering changed from stock while Calm was off (outputPad=${outputPad}, ${expanded ? "expanded" : "collapsed"})`);
+    }
+    codemodeRows.push(actual);
+    codemodeTextRows.push(actual);
+    codemodeStockRows.push(stock);
   }
+}
+for (const expanded of [false, true]) {
   const stock = new ToolExecutionComponent(
     "codemode",
-    `codemode-stock-${expanded}`,
+    `codemode-fallback-stock-${expanded}`,
     codemodeArgs,
-    { showImages: false },
-    createCodemodeToolDefinition(),
+    { showImages: false, outputPad: 0 },
+    undefined,
     renderUi,
     process.cwd(),
   );
   const actual = new ToolExecutionComponent(
     "codemode",
-    `codemode-calm-${expanded}`,
+    `codemode-fallback-calm-${expanded}`,
     codemodeArgs,
-    { showImages: false },
-    resolveToolRenderers("codemode", () => createCodemodeToolDefinition()),
+    { showImages: false, outputPad: 0 },
+    resolveToolRenderers("codemode", () => undefined),
     renderUi,
     process.cwd(),
   );
@@ -1519,11 +1553,8 @@ for (const expanded of createCodemodeToolDefinition ? [false, true] : []) {
     row.setExpanded(expanded);
   }
   if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
-    throw new Error(`Pi codemode rendering changed from stock while Calm was off (${expanded ? "expanded" : "collapsed"})`);
+    throw new Error(`Calm prevented Pi's generic codemode fallback (${expanded ? "expanded" : "collapsed"})`);
   }
-  codemodeRows.push(actual);
-  codemodeTextRows.push(actual);
-  codemodeStockRows.push(stock);
 }
 if (createCodemodeToolDefinition && tools.some((tool) => tool.name === "codemode")) {
   throw new Error("Calm registered or replaced Pi's codemode tool instead of using its renderer resolver");
