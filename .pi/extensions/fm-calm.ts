@@ -258,6 +258,7 @@ export default function (pi: ExtensionAPI) {
       const original = next();
       if (!original?.renderCall || !original.renderResult) return original;
 
+      const originalSelfShell = original.renderShell === "self";
       const shells = new WeakMap<object, StandardShellState>();
       const shellFor = (context: RenderContext<any, any, any>): StandardShellState => {
         const rowState = context.state as object;
@@ -282,6 +283,7 @@ export default function (pi: ExtensionAPI) {
           if (exportRendering) return call;
           state.call = call;
           if (calmPresentationHides("assistant-tool-call")) return new Container();
+          if (originalSelfShell) return call;
           return refreshCodemodeShell(state, theme, context);
         },
         renderResult(result, options, theme, context) {
@@ -294,6 +296,7 @@ export default function (pi: ExtensionAPI) {
           if (exportRendering) return renderedResult;
           state.result = renderedResult;
           if (calmPresentationHides("tool-result")) return new Container();
+          if (originalSelfShell) return renderedResult;
           refreshCodemodeShell(state, theme, context);
           return new Container();
         },

@@ -1556,6 +1556,51 @@ for (const expanded of [false, true]) {
     throw new Error(`Calm prevented Pi's generic codemode fallback (${expanded ? "expanded" : "collapsed"})`);
   }
 }
+const downstreamSelfShell = {
+  renderShell: "self",
+  renderCall(args, theme, context) {
+    return new Text(theme.fg("accent", `SELF_CALL ${args.code}`), context.outputPad, 0);
+  },
+  renderResult(result, _options, theme, context) {
+    return new Text(theme.fg("success", `SELF_RESULT ${result.content[1].text}`), context.outputPad, 0);
+  },
+};
+toolRendererResolvers.push((toolName, next) => toolName === "codemode" ? downstreamSelfShell : next());
+for (const outputPad of [0, 1]) {
+  for (const expanded of [false, true]) {
+    const stock = new ToolExecutionComponent(
+      "codemode",
+      `codemode-self-stock-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      downstreamSelfShell,
+      renderUi,
+      process.cwd(),
+    );
+    const actual = new ToolExecutionComponent(
+      "codemode",
+      `codemode-self-calm-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      resolveToolRenderers("codemode", () => undefined),
+      renderUi,
+      process.cwd(),
+    );
+    for (const row of [stock, actual]) {
+      row.markExecutionStarted();
+      row.setArgsComplete();
+      row.updateResult(codemodeResult);
+      row.setExpanded(expanded);
+    }
+    if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
+      throw new Error(`Calm changed a downstream self-rendering codemode shell (outputPad=${outputPad}, ${expanded ? "expanded" : "collapsed"})`);
+    }
+    codemodeRows.push(actual);
+    codemodeTextRows.push(actual);
+    codemodeStockRows.push(stock);
+  }
+}
+toolRendererResolvers.pop();
 if (createCodemodeToolDefinition && tools.some((tool) => tool.name === "codemode")) {
   throw new Error("Calm registered or replaced Pi's codemode tool instead of using its renderer resolver");
 }
@@ -1730,8 +1775,9 @@ if (workingVisible !== true || hiddenThinkingLabel !== undefined) {
 if (createCodemodeToolDefinition) {
   await calmCommand.handler("", commandContext);
   for (const row of codemodeTextRows) {
-    if (row.render(100).length !== 0) {
-      throw new Error("Calm left a Pi codemode call or text result visible after it was enabled");
+    const rendered = row.render(100);
+    if (rendered.length !== 0) {
+      throw new Error(`Calm left codemode row ${row.toolCallId} visible after it was enabled: ${JSON.stringify(rendered)}`);
     }
   }
   const codemodeImageOutput = codemodeImageActual.render(100).join("\n");
