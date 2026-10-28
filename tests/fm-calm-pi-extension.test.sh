@@ -4270,7 +4270,7 @@ SH
 }
 
 test_interactive_terminal_e2e() {
-  local project config home session_file export_file export_dom default_snapshot expanded_snapshot hidden_snapshot active_before_snapshot active_hidden_snapshot export_snapshot export_settled_snapshot restored_snapshot working_snapshot working_response_snapshot restarted_snapshot resumed_restored_snapshot hash_before hash_after now version chrome chrome_report active_wait active_screen_wait boat_frame_one boat_frame_two boat_resized_snapshot boat_focus_snapshot boat_cleared_snapshot boat_hull_line boat_sail_line boat_column_one boat_column_two boat_line boat_color_snapshot boat_color_line boat_water_snapshot boat_water_line boat_water_first boat_water_changed boat_narrow_snapshot boat_freeze_snapshot boat_resume_snapshot boat_freeze_column boat_freeze_sail boat_resume_column boat_resume_sail
+  local project config home session_file export_file export_dom codemode_race_export_file codemode_race_snapshot default_snapshot expanded_snapshot hidden_snapshot active_before_snapshot active_hidden_snapshot export_snapshot export_settled_snapshot restored_snapshot working_snapshot working_response_snapshot restarted_snapshot resumed_restored_snapshot hash_before hash_after now version chrome chrome_report active_wait active_screen_wait boat_frame_one boat_frame_two boat_resized_snapshot boat_focus_snapshot boat_cleared_snapshot boat_hull_line boat_sail_line boat_column_one boat_column_two boat_line boat_color_snapshot boat_color_line boat_water_snapshot boat_water_line boat_water_first boat_water_changed boat_narrow_snapshot boat_freeze_snapshot boat_resume_snapshot boat_freeze_column boat_freeze_sail boat_resume_column boat_resume_sail
   if ! command -v pi >/dev/null 2>&1 || ! command -v tmux >/dev/null 2>&1; then
     echo "skip: pi or tmux not found for Pi calm interactive E2E"
     return 0
@@ -4284,6 +4284,8 @@ test_interactive_terminal_e2e() {
   session_file="$TMP_ROOT/calm-session.jsonl"
   export_file="$TMP_ROOT/calm-export.html"
   export_dom="$TMP_ROOT/calm-export-dom.html"
+  codemode_race_export_file="$TMP_ROOT/calm-codemode-race-export.html"
+  codemode_race_snapshot="$TMP_ROOT/calm-codemode-race.txt"
   default_snapshot="$TMP_ROOT/default.txt"
   expanded_snapshot="$TMP_ROOT/expanded.txt"
   hidden_snapshot="$TMP_ROOT/hidden.txt"
@@ -4341,15 +4343,116 @@ printf 'CALM_E2E_SESSION_START_DIGEST\n'
 exit 0
 SH
   chmod +x "$project/bin/"*.sh
-  cat >"$project/.pi/extensions/fm-calm-e2e-inject.ts" <<'TS'
+  cat >"$project/.pi/extensions/00-calm-e2e-inject.ts" <<'TS'
+import { writeFileSync } from "node:fs";
 import {
   type AssistantMessage,
   createAssistantMessageEventStream,
 } from "@earendil-works/pi-ai";
 import type { ExtensionAPI } from "@earendil-works/pi-coding-agent";
 import { encodeFirstmateOperationalInput } from "./lib/fm-operational-input.ts";
+import {
+  FIRSTMATE_CALM_PRESENTATION_EVENT,
+  type CalmPresentationState,
+} from "./lib/fm-calm-visibility.ts";
 
 export default function (pi: ExtensionAPI): void {
+  const probeDirectory = process.env.FM_CALM_E2E_PROBE_DIR;
+  const marked = new Set<string>();
+  const mark = (name: string): void => {
+    if (!probeDirectory || marked.has(name)) return;
+    marked.add(name);
+    writeFileSync(`${probeDirectory}/${name}`, `${Date.now()}\n`);
+  };
+  let stockExportRendering = false;
+  let heldPartialInvalidate: (() => void) | undefined;
+  let awaitingSynchronousRepaint = false;
+  let exportCallVisible = false;
+  let exportResultVisible = false;
+  let hiddenCallRendered = false;
+  let hiddenResultRendered = false;
+
+  const instrumentPartialContext = (context: any): any => {
+    if (!context.isPartial) return context;
+    return {
+      ...context,
+      invalidate: () => {
+        if (!stockExportRendering && !awaitingSynchronousRepaint) {
+          heldPartialInvalidate = context.invalidate;
+          mark("calm-codemode-timer-ready");
+          return;
+        }
+        context.invalidate();
+      },
+    };
+  };
+  const observePartialRender = (slot: "call" | "result", component: any, context: any): void => {
+    if (!context.isPartial) return;
+    const rendered = component.render(180).join("\n").replace(/\x1b\[[0-9;]*m/g, "");
+    if (stockExportRendering) {
+      if (slot === "call" && rendered.includes("codemode")) exportCallVisible = true;
+      if (slot === "result" && rendered.includes("Elapsed")) exportResultVisible = true;
+      if (exportCallVisible && exportResultVisible) mark("calm-codemode-invalidated-during-export");
+      return;
+    }
+    if (!awaitingSynchronousRepaint) return;
+    if (slot === "call" && rendered.length === 0) hiddenCallRendered = true;
+    if (slot === "result" && rendered.length === 0) hiddenResultRendered = true;
+    if (hiddenCallRendered && hiddenResultRendered) mark("calm-codemode-repainted-hidden");
+  };
+
+  // This fixture loads before fm-calm.ts, so it observes the final renderer returned
+  // by Calm. It holds the real codemode timer's first invalidation until /export starts,
+  // then verifies the real live row first renders stock and is synchronously repainted
+  // hidden when Calm resumes.
+  pi.registerToolRenderer((toolName, next) => {
+    if (toolName !== "codemode") return next();
+    const renderer = next();
+    if (!renderer) return renderer;
+    return {
+      ...renderer,
+      renderCall: renderer.renderCall
+        ? (args, theme, context) => {
+            const component = renderer.renderCall!(args, theme, instrumentPartialContext(context));
+            observePartialRender("call", component, context);
+            return component;
+          }
+        : undefined,
+      renderResult: renderer.renderResult
+        ? (result, options, theme, context) => {
+            const component = renderer.renderResult!(
+              result,
+              options,
+              theme,
+              instrumentPartialContext(context),
+            );
+            observePartialRender("result", component, context);
+            return component;
+          }
+        : undefined,
+    };
+  });
+
+  pi.events.on(FIRSTMATE_CALM_PRESENTATION_EVENT, (data) => {
+    const next = data as Partial<CalmPresentationState>;
+    const wasExportRendering = stockExportRendering;
+    stockExportRendering = next.stockExportRendering === true;
+    if (!wasExportRendering && stockExportRendering) {
+      exportCallVisible = false;
+      exportResultVisible = false;
+      const invalidate = heldPartialInvalidate;
+      heldPartialInvalidate = undefined;
+      invalidate?.();
+    } else if (wasExportRendering && !stockExportRendering) {
+      hiddenCallRendered = false;
+      hiddenResultRendered = false;
+      awaitingSynchronousRepaint = true;
+      queueMicrotask(() => {
+        awaitingSynchronousRepaint = false;
+      });
+    }
+  });
+
   pi.registerProvider("calm-e2e", {
     baseUrl: "http://127.0.0.1/unused",
     apiKey: "test-only",
@@ -4382,8 +4485,17 @@ export default function (pi: ExtensionAPI): void {
         contextWindow: 4096,
         maxTokens: 128,
       },
+      {
+        id: "codemode-export-race",
+        name: "Calm live codemode export-race fixture",
+        reasoning: false,
+        input: ["text"],
+        cost: { input: 0, output: 0, cacheRead: 0, cacheWrite: 0 },
+        contextWindow: 4096,
+        maxTokens: 128,
+      },
     ],
-    streamSimple(model, _context, options) {
+    streamSimple(model, context, options) {
       const stream = createAssistantMessageEventStream();
       const output: AssistantMessage = {
         role: "assistant",
@@ -4403,6 +4515,37 @@ export default function (pi: ExtensionAPI): void {
         timestamp: Date.now(),
       };
       void (async () => {
+        if (model.id === "codemode-export-race") {
+          stream.push({ type: "start", partial: output });
+          const completed = context.messages.some(
+            (message) =>
+              message.role === "toolResult" &&
+              message.toolCallId === "call_calm_codemode_export_race",
+          );
+          if (!completed) {
+            const toolCall = {
+              type: "toolCall" as const,
+              id: "call_calm_codemode_export_race",
+              name: "codemode",
+              arguments: {
+                code: 'const result = await tools.bash({ command: "sleep 5; printf CALM_CODEMODE_EXPORT_RACE_DELAY_DONE" });\ntext(result.output); // CALM_CODEMODE_EXPORT_RACE_SCRIPT',
+              },
+            };
+            output.content.push(toolCall);
+            output.stopReason = "toolUse";
+            stream.push({ type: "toolcall_start", contentIndex: 0, partial: output });
+            stream.push({ type: "toolcall_end", contentIndex: 0, toolCall, partial: output });
+          } else {
+            const block = { type: "text" as const, text: "CALM_CODEMODE_EXPORT_RACE_COMPLETE" };
+            output.content.push(block);
+            stream.push({ type: "text_start", contentIndex: 0, partial: output });
+            stream.push({ type: "text_delta", contentIndex: 0, delta: block.text, partial: output });
+            stream.push({ type: "text_end", contentIndex: 0, content: block.text, partial: output });
+          }
+          stream.push({ type: "done", reason: output.stopReason, message: output });
+          stream.end();
+          return;
+        }
         if (model.id === "operational-error") {
           await new Promise((resolve) => setTimeout(resolve, 25));
           output.stopReason = "error";
@@ -4471,6 +4614,16 @@ export default function (pi: ExtensionAPI): void {
       });
     },
   });
+  pi.registerCommand("calm-codemode-export-race-e2e", {
+    description: "Start the bounded live codemode export-race fixture.",
+    handler: async (_args, ctx) => {
+      const model = ctx.modelRegistry.find("calm-e2e", "codemode-export-race");
+      if (!model || !(await pi.setModel(model))) {
+        throw new Error("could not select the live codemode export-race model");
+      }
+      await pi.sendUserMessage("CALM_CODEMODE_EXPORT_RACE_PROMPT");
+    },
+  });
   pi.registerCommand("calm-boat-e2e", {
     description: "Start the long-delay working-ship fixture.",
     handler: async (_args, ctx) => {
@@ -4519,7 +4672,7 @@ TS
 JSON
 
   tmux -L "$TMUX_SOCKET" new-session -d -s "$TMUX_SESSION" -x 180 -y 44 \
-    "cd '$project' && env FM_HOME='$home' PI_CODING_AGENT_DIR='$config' FM_OPERATIONAL_INPUT_SCRIPT='$OPERATIONAL_INPUT' PI_OFFLINE=1 pi $PI_TUI_MODE_ARGS --approve --no-skills --no-prompt-templates --no-context-files --session '$session_file'; rc=\$?; printf '\nPI_EXIT=%s\n' \"\$rc\"; sleep 30"
+    "cd '$project' && env FM_HOME='$home' PI_CODING_AGENT_DIR='$config' FM_OPERATIONAL_INPUT_SCRIPT='$OPERATIONAL_INPUT' FM_CALM_E2E_PROBE_DIR='$TMP_ROOT' PI_OFFLINE=1 pi $PI_TUI_MODE_ARGS --approve --tools +codemode --no-skills --no-prompt-templates --no-context-files --session '$session_file'; rc=\$?; printf '\nPI_EXIT=%s\n' \"\$rc\"; sleep 30"
   wait_for_text "$default_snapshot" "The deterministic tool example is complete." \
     || fail "Pi calm E2E did not reach the restored session transcript"
   assert_contains "$(cat "$default_snapshot")" "CALM_E2E_OUTPUT" "calm mode was not off by default"
@@ -4704,6 +4857,43 @@ JS
   done
   assert_contains "$(cat "$active_hidden_snapshot")" "Warning: CALM_TRANSIENT_DIAGNOSTIC" "operational arrival lost its preceding transient diagnostic"
   assert_contains "$(cat "$active_hidden_snapshot")" " Error:" "operational delivery did not produce a transient provider diagnostic"
+
+  tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" -l "/calm-codemode-export-race-e2e"
+  tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" M-s
+  active_wait=0
+  while [ ! -f "$TMP_ROOT/calm-codemode-timer-ready" ] && [ "$active_wait" -lt 160 ]; do
+    sleep 0.05
+    active_wait=$((active_wait + 1))
+  done
+  if [ ! -f "$TMP_ROOT/calm-codemode-timer-ready" ]; then
+    tmux -L "$TMUX_SOCKET" capture-pane -p -t "$TMUX_SESSION" -S -120 >"$codemode_race_snapshot"
+    fail "the live partial codemode row did not reach its real one-second invalidation timer: $(tail -40 "$codemode_race_snapshot" | tr '\n' ' ')"
+  fi
+
+  tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" -l "/export $codemode_race_export_file"
+  tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" M-s
+  active_wait=0
+  while { [ ! -f "$TMP_ROOT/calm-codemode-invalidated-during-export" ] ||
+    [ ! -f "$TMP_ROOT/calm-codemode-repainted-hidden" ]; } && [ "$active_wait" -lt 80 ]; do
+    sleep 0.05
+    active_wait=$((active_wait + 1))
+  done
+  [ -f "$TMP_ROOT/calm-codemode-invalidated-during-export" ] \
+    || fail "the real partial codemode row did not invalidate into stock rendering during /export"
+  [ -f "$TMP_ROOT/calm-codemode-repainted-hidden" ] \
+    || fail "Calm did not synchronously repaint the live invalidated partial codemode row hidden after /export"
+  wait_for_text "$codemode_race_snapshot" "Session exported to: $codemode_race_export_file" \
+    || fail "the bounded live codemode race export did not complete"
+  tmux -L "$TMUX_SOCKET" capture-pane -p -t "$TMUX_SESSION" -S -600 >"$codemode_race_snapshot"
+  assert_not_contains "$(cat "$codemode_race_snapshot")" "CALM_CODEMODE_EXPORT_RACE_SCRIPT" \
+    "the live partial codemode row remained visible after Calm resumed"
+  wait_for_text "$codemode_race_snapshot" "CALM_CODEMODE_EXPORT_RACE_COMPLETE" \
+    || fail "the deterministic codemode export-race run did not settle"
+  if [ "${FM_CALM_CODEMODE_RACE_ONLY:-0}" = 1 ]; then
+    pass "real Pi partial codemode invalidation during export is synchronously repainted hidden when Calm resumes"
+    return 0
+  fi
+
   hash_before=$(shasum -a 256 "$session_file" | awk '{print $1}')
 
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" -l "/export $export_file"
@@ -5203,7 +5393,7 @@ JS
   tmux -L "$TMUX_SOCKET" kill-session -t "$TMUX_SESSION" 2>/dev/null || true
 
   tmux -L "$TMUX_SOCKET" new-session -d -s "$TMUX_SESSION" -x 180 -y 44 \
-    "cd '$project' && env FM_HOME='$home' PI_CODING_AGENT_DIR='$config' FM_OPERATIONAL_INPUT_SCRIPT='$OPERATIONAL_INPUT' PI_OFFLINE=1 pi $PI_TUI_MODE_ARGS --approve --no-skills --no-prompt-templates --no-context-files --session '$session_file'; rc=\$?; printf '\nPI_EXIT=%s\n' \"\$rc\"; sleep 30"
+    "cd '$project' && env FM_HOME='$home' PI_CODING_AGENT_DIR='$config' FM_OPERATIONAL_INPUT_SCRIPT='$OPERATIONAL_INPUT' FM_CALM_E2E_PROBE_DIR='$TMP_ROOT' PI_OFFLINE=1 pi $PI_TUI_MODE_ARGS --approve --tools +codemode --no-skills --no-prompt-templates --no-context-files --session '$session_file'; rc=\$?; printf '\nPI_EXIT=%s\n' \"\$rc\"; sleep 30"
   wait_for_text "$restarted_snapshot" "CALM_WORKING_E2E_RESPONSE" \
     || fail "Pi did not restore the persisted session after restart"
   assert_not_contains "$(cat "$restarted_snapshot")" "CALM_E2E_OUTPUT" "restart/resume reset Calm and restored a tool row"
@@ -5234,7 +5424,7 @@ JS
   [ "$(cat "$home/config/calm")" = off ] || fail "/calm after restart did not persist the inactive choice"
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" -l "/quit"
   tmux -L "$TMUX_SOCKET" send-keys -t "$TMUX_SESSION" M-s
-  pass "Pi calm native E2E replaces the stock working row with a moving, resize-clamped working ship that freezes and resumes across two working periods in one Pi session, clears on abort, keeps captain turns visible, hides exact operational user rows without changing persistence, restores stock rendering Calm-off, survives restart, and preserves export plus Ctrl+O behavior"
+  pass "Pi calm native E2E drives the live partial codemode invalidation during export and synchronous hidden repaint, replaces the stock working row with a moving, resize-clamped working ship that freezes and resumes across two working periods in one Pi session, clears on abort, keeps captain turns visible, hides exact operational user rows without changing persistence, restores stock rendering Calm-off, survives restart, and preserves export plus Ctrl+O behavior"
 }
 
 test_home_resolution
