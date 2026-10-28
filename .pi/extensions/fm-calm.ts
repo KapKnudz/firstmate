@@ -1,16 +1,18 @@
 // Firstmate's home-persistent Pi transcript presentation toggle.
 //
-// Verified against Pi 0.81.1, 0.82.0, and 0.84.4, which expose built-in ToolDefinitions, per-slot
-// renderers, renderShell: "self", session_start replacement reasons, agent_start and
-// agent_settled, ExtensionUIContext.setToolsExpanded(), setWorkingVisible(), setWidget()
+// The baseline is verified against Pi 0.81.1, 0.82.0, and 0.84.4, which expose built-in
+// ToolDefinitions, per-slot renderers, renderShell: "self", session_start replacement
+// reasons, agent_start and agent_settled, ExtensionUIContext.setToolsExpanded(),
+// setWorkingVisible(), setWidget()
 // with a disposable component factory, and setHiddenThinkingLabel().
 // ./lib/fm-calm-working-ship.ts owns the animated working presentation this file
 // installs. The focused tests pin those assumptions but never reject a
 // newer Pi solely for its version. The collapsed-thinking, operational-user, and
 // queued-operational presentation adapters probe the exact API they patch and degrade
 // independently with a diagnostic (see installCalmPresentationAdapter below) if a future
-// Pi removes it. Pi's renderer-only resolver can cover named tool rows, but it is not a
-// global transcript filter. docs/configuration.md owns the home-local Calm preference contract.
+// Pi removes it. Pi's renderer-only resolver and the named codemode adapter are verified
+// on Pi 1.4.0, but that resolver is not a global transcript filter.
+// docs/configuration.md owns the home-local Calm preference contract.
 //
 // Pi has one first-registration-wins ToolDefinition per tool name, with no merge or
 // unregister operation. Keep Calm-off registration empty; keep Calm-on load-time
