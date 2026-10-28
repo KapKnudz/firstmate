@@ -17,7 +17,19 @@ Pi 0.81.1 was installed when Calm was first built, and Pi 0.82.0 was the later r
 The inspected Pi CHANGELOG shows no relevant presentation API introduced at either version, so those versions remain verification evidence rather than compatibility bounds.
 The exported classes used by the adapters (`AssistantMessageComponent` and `InteractiveMode`) are undocumented internals with no stated version guarantee.
 `tests/fm-calm-pi-extension.test.sh` records the installed Pi version as evidence without gating on it and covers both newer synthetic versions and an unavailable adapter seam.
-This host tracks Pi latest, so the version the evidence is pinned to moves; the [2026-09-07 record](#2026-09-07-pi-0851-renderer-and-export-dom-verification) owns the currently pinned version and the renderer comparison behind it.
+This host tracks Pi latest, so the version the evidence is pinned to moves; the [2026-11-28 record](#2026-11-28-pi-140-codemode-renderer) owns the currently pinned version and the renderer comparison behind it.
+
+### 2026-11-28 Pi 1.4.0 codemode renderer
+
+Pi 1.4.0's `ExtensionAPI.registerToolRenderer` provides a per-tool renderer resolver whose `next()` includes later resolvers and the registered tool; it is not a transcript-wide filter and does not alter tool execution.
+The isolated Calm render/lifecycle test uses Pi's actual `ToolExecutionComponent` and `createCodemodeToolDefinition()` to verify stock-identical codemode rendering while Calm is off, zero-height call/text output while on, stock HTML export rendering, and restoration after export and toggle-off.
+Pi's `ToolExecutionComponent` separately appends image components outside renderer slots, so codemode image output remains visible; this supported-API boundary is deliberate and tested.
+
+```sh
+FM_PI_PACKAGE_DIR="$HOME/.pi/agent/install/releases/1.4.0/node_modules/@earendil-works/pi-coding-agent" bash tests/fm-calm-pi-extension.test.sh
+```
+
+The renderer/lifecycle test reported success in the run above; the complete script later failed in `test_export_dom_render_guard` because the fake hanging Chrome did not exhaust its expected retries, so the full suite was not green.
 
 ### Built-in tool override constraints
 
@@ -226,9 +238,9 @@ The test fixture enumerates every class below through the centralized policy, an
 | `genuine-agent-response` | Assistant text in `AssistantMessageComponent` | Visible. |
 | `assistant-working-note` | Assistant text in an `AssistantMessageComponent` message the model did not end its response with, identified by its own `stopReason` of `toolUse`, or of `length` with tool calls present | Each settled text block follows the cross-harness preservation contract in [`calm.md`](calm.md); hidden blocks are removed from the shallow presentation copy before layout, a `toolUse` message carrying only short narration occupies zero rows (verified on Pi 0.84.1), and a still-streaming `pending` message is never filtered. |
 | `assistant-thinking` | Thinking content in `AssistantMessageComponent` | Collapsed reasoning is removed from the shallow presentation copy before layout and occupies zero rows; explicit expansion renders the original reasoning. |
-| `assistant-tool-call` | `ToolExecutionComponent` | Seven built-ins, `fm_watch_arm_pi`, `fm_branch_outcomes`, and `fm_branch_processed` hidden; other arbitrary custom tools remain an unsupported boundary. |
-| `tool-result` | `ToolExecutionComponent` | Text results for the controlled tools hidden; other arbitrary custom results remain an unsupported boundary. |
-| `tool-image` | Image children appended outside tool renderer slots | Unsupported boundary; remains visible. |
+| `assistant-tool-call` | `ToolExecutionComponent` | Seven built-ins, `fm_watch_arm_pi`, `fm_branch_outcomes`, `fm_branch_processed`, and the named Pi `codemode` renderer hidden; other arbitrary custom tools remain an unsupported boundary. |
+| `tool-result` | `ToolExecutionComponent` | Text results for the controlled tools, including codemode's script output and nested-call summary, hidden; other arbitrary custom results remain an unsupported boundary. |
+| `tool-image` | Image children appended outside tool renderer slots | Unsupported boundary; built-in images and codemode image output remain visible. |
 | `user-bash` | `BashExecutionComponent` for `!` and `!!` | Unsupported boundary; remains visible. |
 | `skill-invocation` | `SkillInvocationMessageComponent` plus parsed user text | Unsupported boundary; remains visible. |
 | `custom-message` | `CustomMessageComponent` when `display` is true | The session-start nudge and legacy Calm context messages use `display: false`; arbitrary extension messages remain an unsupported boundary. |
@@ -244,8 +256,8 @@ The test fixture enumerates every class below through the centralized policy, an
 | `synthetic-assistant` | No authoritative Firstmate source found | Policy-hidden, but Pi exposes no generic assistant-role renderer. |
 | `unknown` | Future or unclassified transcript component | Policy-hidden, but no generic renderer exists; never claimed as covered. |
 
-The installed extension API has no supported global transcript filter, user-message renderer, assistant-message renderer, chat-container API, or generic custom-tool wrapper.
-Pi 0.81.1 through 0.82.0, Pi 0.84.4, and Pi 0.85.1 export `AssistantMessageComponent` and `InteractiveMode`, so Calm uses separate idempotent, API-probed adapters for assistant thinking layout and the complete operational-user transcript row while leaving all message data and non-Calm rendering unchanged; see the [compatibility contract](calm.md#pi-compatibility) for how a future Pi lacking one of those exports is handled.
+The installed extension API has no supported global transcript filter, user-message renderer, assistant-message renderer, chat-container API, or generic custom-tool wrapper; Pi's named tool-renderer resolver is scoped to `codemode` and cannot suppress image components appended by `ToolExecutionComponent`.
+Pi 0.81.1 through 0.82.0, Pi 0.84.4, Pi 0.85.1, and Pi 1.4.0 export `AssistantMessageComponent` and `InteractiveMode`, so Calm uses separate idempotent, API-probed adapters for assistant thinking layout and the complete operational-user transcript row while leaving all message data and non-Calm rendering unchanged; see the [compatibility contract](calm.md#pi-compatibility) for how a future Pi lacking one of those exports is handled.
 General component replacement, ANSI cursor erasure, provider-context mutation, and installed-file patching remain rejected as unsupported or preservation-breaking workarounds.
 
 ## Cross-harness verification record
