@@ -17,9 +17,9 @@ Pi 0.81.1 was installed when Calm was first built, and Pi 0.82.0 was the later r
 The inspected Pi CHANGELOG shows no relevant presentation API introduced at either version, so those versions remain verification evidence rather than compatibility bounds.
 The exported classes used by the adapters (`AssistantMessageComponent` and `InteractiveMode`) are undocumented internals with no stated version guarantee.
 `tests/fm-calm-pi-extension.test.sh` records the installed Pi version as evidence without gating on it and covers both newer synthetic versions and an unavailable adapter seam.
-This host tracks Pi latest, so the version the evidence is pinned to moves; the [2026-11-28 record](#2026-11-28-pi-140-codemode-renderer) owns the currently pinned version and the renderer comparison behind it.
+This host tracks Pi latest, so the version the evidence is pinned to moves; the [2026-10-28 record](#2026-10-28-pi-140-codemode-renderer) owns the currently pinned version and the renderer comparison behind it.
 
-### 2026-11-28 Pi 1.4.0 codemode renderer
+### 2026-10-28 Pi 1.4.0 codemode renderer
 
 Pi 1.4.0's `ExtensionAPI.registerToolRenderer` provides a per-tool renderer resolver whose `next()` includes later resolvers and the registered tool; it is not a transcript-wide filter and does not alter tool execution.
 The isolated Calm render/lifecycle test uses Pi's actual `ToolExecutionComponent` and `createCodemodeToolDefinition()` to verify stock-identical codemode rendering while Calm is off, zero-height call/text output while on, stock HTML export rendering, and restoration after export and toggle-off.
@@ -29,7 +29,7 @@ Pi's `ToolExecutionComponent` separately appends image components outside render
 FM_PI_PACKAGE_DIR="$HOME/.pi/agent/install/releases/1.4.0/node_modules/@earendil-works/pi-coding-agent" bash tests/fm-calm-pi-extension.test.sh
 ```
 
-The renderer/lifecycle test reported success in the run above; the complete script later failed in `test_export_dom_render_guard` because the fake hanging Chrome did not exhaust its expected retries, so the full suite was not green.
+An earlier invocation stopped in `test_export_dom_render_guard` because the fake hanging Chrome did not exhaust its expected retries; a later full run with the final test code passed that guard and the interactive Pi checks. The guard itself was not changed.
 
 ### Built-in tool override constraints
 
