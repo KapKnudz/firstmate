@@ -263,6 +263,7 @@ export default function (pi: ExtensionAPI) {
       const shells = new WeakMap<object, StandardShellState>();
       const shellFor = (context: RenderContext<any, any, any>): StandardShellState => {
         const rowState = context.state as object;
+        rememberCalmToolRow(rowState, context.invalidate);
         let state = shells.get(rowState);
         if (!state) {
           state = {};

@@ -1861,6 +1861,16 @@ for (const { name, actual } of rows) {
     throw new Error(`${name} was not hidden before export rendering`);
   }
 }
+const exportRaceCodemodeRow = createCodemodeRow(
+  resolveToolRenderers("codemode", () => codemodeDefinition),
+  codemodeFixtures[0],
+  false,
+  "export-race-codemode",
+);
+codemodeRows.push(exportRaceCodemodeRow);
+if (exportRaceCodemodeRow.render(56).length !== 0) {
+  throw new Error("Calm left the partial codemode export-race fixture visible before export");
+}
 // Pi 1.0.0 resolves export HTML through getToolDefinition. Pi 1.0.1 renamed that
 // dependency to getToolRenderers and ignores the old key, so a fixture that
 // passes only the old key reports every tool as missing. Supply both; each
@@ -1877,9 +1887,10 @@ function createInstalledToolHtmlRenderer() {
     cwd: process.cwd(),
   });
 }
-async function assertStockHtmlRendering(command, submitData) {
+async function assertStockHtmlRendering(command, submitData, duringExport) {
   editorText = command;
   terminalInputHandler(submitData);
+  duringExport?.();
   const htmlRenderer = createInstalledToolHtmlRenderer();
   const exportCases = [
     ...cases.filter(([toolName]) => toolName === "grep" || toolName === "find"),
@@ -1911,7 +1922,17 @@ async function assertStockHtmlRendering(command, submitData) {
   await new Promise((resolve) => setTimeout(resolve, 0));
 }
 
-await assertStockHtmlRendering("/export calm.html", "\r");
+await assertStockHtmlRendering("/export calm.html", "\r", () => {
+  exportRaceCodemodeRow.invalidate();
+  const visibleDuringExport = normalizeCodemodeRows(exportRaceCodemodeRow.render(56));
+  if (!visibleDuringExport.includes("codemode") || !visibleDuringExport.includes("Elapsed <timer>")) {
+    throw new Error(`partial codemode invalidation did not reproduce stock rendering during export: ${visibleDuringExport}`);
+  }
+});
+if (exportRaceCodemodeRow.render(56).length !== 0) {
+  throw new Error("post-export repaint left the invalidated partial codemode row visible under Calm");
+}
+exportRaceCodemodeRow.updateResult(codemodeFixtures[1].result, false);
 getKeybindings().setUserBindings({ "tui.input.submit": "alt+s" });
 editorText = "/export remapped.html";
 terminalInputHandler("\r");
