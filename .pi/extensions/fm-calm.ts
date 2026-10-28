@@ -6,9 +6,9 @@
 // with a disposable component factory, and setHiddenThinkingLabel().
 // ./lib/fm-calm-working-ship.ts owns the animated working presentation this file
 // installs. The focused tests pin those assumptions but never reject a
-// newer Pi solely for its version. The collapsed-thinking, operational-user, and
-// queued-operational presentation adapters probe the exact API they patch and degrade
-// independently with a diagnostic (see installCalmPresentationAdapter below) if a future
+// newer Pi solely for its version. The collapsed-thinking, operational-user,
+// queued-operational, and codemode presentation adapters probe the exact API they use and
+// degrade independently with a diagnostic (see installCalmPresentationAdapter below) if a future
 // Pi removes it; the named tool-renderer resolver handles codemode only, not arbitrary rows.
 // docs/configuration.md owns the home-local Calm preference contract.
 //

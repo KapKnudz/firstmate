@@ -9,8 +9,8 @@
 # origin/<base_branch> instead of the default branch.
 # A home that creates config/spawn-base-primary-checkout, where bin/fm-spawn.sh
 # can start a local-only ship or a scout from the primary checkout's <default>,
-# instead anchors a remote-backed task without base_branch= on the branch it
-# delivers to. A publishing mode (bin/fm-dod-lib.sh fm_mode_publishes) keeps
+# instead anchors a remote-backed task without base_branch= on the tighter
+# matching local or origin default. A publishing mode (bin/fm-dod-lib.sh fm_mode_publishes) keeps
 # origin/<default>, which its pull request targets, so everything that pull
 # request would carry stays in the review. A local-only ship or a scout is
 # compared against whichever of the local <default> and origin/<default> meets
