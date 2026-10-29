@@ -1266,6 +1266,38 @@ SH
   pass "fm-lint.sh passes a clean fixture"
 }
 
+test_timing_accepts_locale_decimal_separators() {
+  local tmp fakebin fixture log bash_env label raw telemetry roots_log out
+  tmp=$(fm_test_tmproot fm-lint-locale-timing)
+  fakebin=$(fm_fakebin "$tmp")
+  fixture="$tmp/fixture.sh"
+  log="$tmp/shellcheck.log"
+  bash_env="$tmp/bash-env.sh"
+  printf '#!/usr/bin/env bash\nexit 0\n' > "$fixture"
+  cat > "$bash_env" <<'SH'
+unset EPOCHREALTIME
+EPOCHREALTIME=${FM_TEST_EPOCHREALTIME:?}
+SH
+  fm_lint_stub_shellcheck "$fakebin" "$log"
+
+  for label in dot comma; do
+    case "$label" in
+      dot) raw=1700000000.123456 ;;
+      comma) raw=1700000000,123456 ;;
+    esac
+    telemetry="$tmp/$label.tsv"
+    roots_log="$tmp/$label.roots.tsv"
+    out=$(PATH="$fakebin:$PATH" BASH_ENV="$bash_env" FM_TEST_EPOCHREALTIME="$raw" \
+      FM_LINT_JOBS=1 "$LINT" --telemetry "$telemetry" "$fixture" 2>&1) \
+      || fail "$label-decimal EPOCHREALTIME broke lint timing"$'\n'"$out"
+    awk -F '\t' '$1 == "begin" && $6 == 1700000000123 { found=1 } END { exit !found }' \
+      "$roots_log" || fail "$label-decimal EPOCHREALTIME produced the wrong start timestamp"
+    awk -F '\t' '$1 == "end" && $6 == 1700000000123 && $7 == 1700000000123 && $8 == 0 { found=1 } END { exit !found }' \
+      "$roots_log" || fail "$label-decimal EPOCHREALTIME changed duration semantics"
+  done
+  pass "lint timing accepts dot and comma EPOCHREALTIME decimal separators"
+}
+
 test_jobs_are_deterministic_and_complete() {
   if ! pinned_ready; then
     pass "SKIP (ShellCheck $REQUIRED not resolved): deterministic bounded jobs check"
@@ -2047,6 +2079,7 @@ test_rejects_direct_beads_cli_invocations
 test_rejects_direct_beads_cli_in_explicit_core_path
 test_ignores_ambient_shellcheck_opts
 test_clean_fixture_passes
+test_timing_accepts_locale_decimal_separators
 test_jobs_are_deterministic_and_complete
 test_worker_trees_stop_on_signal
 test_root_deadline_names_the_root_and_reaps_the_tree
