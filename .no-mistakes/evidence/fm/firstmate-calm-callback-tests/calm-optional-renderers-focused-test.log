@@ -1,0 +1,1 @@
+ok - Pi 1.4.0 Calm hides the codemode script, nested-call summary, timing, and text result only while enabled, restores stock rendering after toggles and export, leaves Pi-appended codemode images visible, preserves session data, keeps Pi's stock working row visible while idle, and persists its choice across sessions

@@ -1,0 +1,3 @@
+missing-renderCall: detected - Calm changed Pi's stock codemode fallback when renderCall was missing
+missing-renderResult: detected - Calm changed Pi's stock codemode fallback when renderResult was missing
+both-absent: detected - Calm changed Pi's stock codemode fallback when renderCall and renderResult was missing

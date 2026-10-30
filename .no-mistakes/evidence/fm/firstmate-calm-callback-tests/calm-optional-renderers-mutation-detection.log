@@ -1,0 +1,9 @@
+not ok - Pi calm renderer and lifecycle contract failed: file:///private/var/folders/x4/j_wxlgcn2xxc5z64v25hsnlm0000gn/T/fm-calm-pi-extension.jnHuwy/renderer/[eval1]:422
+        throw new Error(`Calm changed Pi's stock codemode fallback when ${testCase.missing.join(" and ")} was missing`);
+              ^
+
+Error: Calm changed Pi's stock codemode fallback when renderCall was missing
+    at file:///private/var/folders/x4/j_wxlgcn2xxc5z64v25hsnlm0000gn/T/fm-calm-pi-extension.jnHuwy/renderer/[eval1]:422:15
+    at process.processTicksAndRejections (node:internal/process/task_queues:103:5)
+
+Node.js v22.23.2
