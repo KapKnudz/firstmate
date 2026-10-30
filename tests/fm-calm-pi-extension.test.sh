@@ -18,6 +18,17 @@ WATCH_EXT="$ROOT/.pi/extensions/fm-primary-pi-watch.ts"
 OPERATIONAL_INPUT="$ROOT/bin/fm-operational-input.sh"
 PI_OPERATIONAL_INPUT="$ROOT/.pi/extensions/lib/fm-operational-input.ts"
 PI_PACKAGE_DIR=${FM_PI_PACKAGE_DIR:-"$(npm root -g 2>/dev/null)/@earendil-works/pi-coding-agent"}
+# Pi's release tree keeps these dependencies beside the package; present them at
+# the package-local paths the fixtures resolve, without touching the installation.
+PI_PACKAGE_SOURCE_DIR=$PI_PACKAGE_DIR
+PI_TUI_PACKAGE_DIR=${FM_PI_TUI_PACKAGE_DIR:-"$(dirname "$PI_PACKAGE_SOURCE_DIR")/pi-tui"}
+TYPEBOX_PACKAGE_DIR=${FM_TYPEBOX_PACKAGE_DIR:-"$(dirname "$(dirname "$PI_PACKAGE_SOURCE_DIR")")/typebox"}
+PI_PACKAGE_DIR="$TMP_ROOT/pi-package"
+mkdir -p "$PI_PACKAGE_DIR/node_modules/@earendil-works"
+ln -s "$PI_PACKAGE_SOURCE_DIR/package.json" "$PI_PACKAGE_DIR/package.json"
+ln -s "$PI_PACKAGE_SOURCE_DIR/dist" "$PI_PACKAGE_DIR/dist"
+ln -s "$PI_TUI_PACKAGE_DIR" "$PI_PACKAGE_DIR/node_modules/@earendil-works/pi-tui"
+ln -s "$TYPEBOX_PACKAGE_DIR" "$PI_PACKAGE_DIR/node_modules/typebox"
 TMUX_SOCKET="fm-calm-$$"
 TMUX_SESSION="fm-calm-e2e"
 # Verified against Pi 0.81.1 and 0.82.0 (docs/calm-mode-feasibility.md). This is
@@ -237,6 +248,7 @@ function registerCalm() {
       if (name === "calm") calmCommand = command;
     },
     registerEntryRenderer() {},
+    registerToolRenderer() {},
     registerTool() {},
     getAllTools() {
       return [];
@@ -370,6 +382,7 @@ const pi = {
     if (name === "calm") calmCommand = command;
   },
   registerEntryRenderer() {},
+  registerToolRenderer() {},
   registerTool() {},
 };
 
@@ -838,6 +851,7 @@ function fakePi() {
     },
     registerCommand() {},
     registerEntryRenderer() {},
+    registerToolRenderer() {},
     registerTool(tool) {
       tools.push(tool);
     },
@@ -964,6 +978,7 @@ const pi = {
     if (name === "calm") calmCommand = command;
   },
   registerEntryRenderer() {},
+  registerToolRenderer() {},
   // Mirrors Pi's own arbitration: first registrant for a name keeps it, silently.
   registerTool(tool) {
     if (!registry.has(tool.name)) {
@@ -1137,7 +1152,7 @@ SH
 
   output_file="$fixture/node-output"
   (cd "$fixture" && EXT="$fixture/fm-calm.ts" WATCH_EXT="$fixture/fm-primary-pi-watch.ts" FM_HOME="$fixture/home" FM_OPERATIONAL_INPUT_SCRIPT="$fixture/operational-input-probe.sh" FM_OPERATIONAL_INPUT_OWNER="$OPERATIONAL_INPUT" FM_OPERATIONAL_INPUT_CALLS="$fixture/operational-input-calls" PI_PACKAGE_DIR="$PI_PACKAGE_DIR" node --input-type=module) >"$output_file" 2>&1 <<'JS'
-import { readFileSync, writeFileSync } from "node:fs";
+import { existsSync, readFileSync, writeFileSync } from "node:fs";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
 // fm-calm.ts derives its own identity the same way (fileURLToPath(import.meta.url)),
@@ -1163,6 +1178,10 @@ const [{ AssistantMessageComponent }, { CustomEntryComponent }, { ToolExecutionC
   // definition-less row now renders the generic text fallback instead.
   import(pathToFileURL(`${packageRoot}/dist/core/tools/index.js`).href),
 ]);
+const codemodeToolPath = `${packageRoot}/dist/extensions/codemode/tool.js`;
+const { createCodemodeToolDefinition } = existsSync(codemodeToolPath)
+  ? await import(pathToFileURL(codemodeToolPath).href)
+  : {};
 const stockDefinitions = {
   read: createReadToolDefinition,
   bash: createBashToolDefinition,
@@ -1179,6 +1198,7 @@ const tools = [];
 const handlers = new Map();
 const entryRenderers = new Map();
 const eventListeners = new Map();
+const toolRendererResolvers = [];
 let calmCommand;
 const pi = {
   events: {
@@ -1202,6 +1222,9 @@ const pi = {
   registerEntryRenderer(customType, renderer) {
     entryRenderers.set(customType, renderer);
   },
+  registerToolRenderer(resolver) {
+    toolRendererResolvers.push(resolver);
+  },
   registerTool(tool) {
     const existingIndex = tools.findIndex((existing) => existing.name === tool.name);
     if (existingIndex === -1) tools.push(tool);
@@ -1219,6 +1242,12 @@ const pi = {
 };
 const extension = await import(`${pathToFileURL(process.env.EXT).href}?test=${Date.now()}`);
 extension.default(pi);
+function resolveToolRenderers(toolName, base) {
+  const resolve = (index) => index < toolRendererResolvers.length
+    ? toolRendererResolvers[index](toolName, () => resolve(index + 1))
+    : base();
+  return resolve(0);
+}
 const visibility = await import(`${pathToFileURL(`${process.cwd()}/lib/fm-calm-visibility.ts`).href}?policy=${Date.now()}`);
 const operationalInput = await import(`${pathToFileURL(`${process.cwd()}/lib/fm-operational-input.ts`).href}?input=${Date.now()}`);
 
@@ -1347,8 +1376,8 @@ const renderUi = { requestRender() {} };
 const rows = [];
 for (const [name, args, result] of cases) {
   const wrapped = tools.find((tool) => tool.name === name);
-  const baseline = new ToolExecutionComponent(name, `baseline-${name}`, args, { showImages: false }, stockDefinitions[name](process.cwd()), renderUi, process.cwd());
-  const actual = new ToolExecutionComponent(name, `wrapped-${name}`, args, { showImages: false }, wrapped, renderUi, process.cwd());
+  const baseline = new ToolExecutionComponent(name, `baseline-${name}`, args, { showImages: false, outputPad: 0 }, stockDefinitions[name](process.cwd()), renderUi, process.cwd());
+  const actual = new ToolExecutionComponent(name, `wrapped-${name}`, args, { showImages: false, outputPad: 0 }, wrapped, renderUi, process.cwd());
   for (const row of [baseline, actual]) {
     row.markExecutionStarted();
     row.setArgsComplete();
@@ -1446,6 +1475,136 @@ customRow.markExecutionStarted();
 customRow.setArgsComplete();
 customRow.updateResult({ content: [{ type: "text", text: "CUSTOM_RESULT" }], details: {}, isError: false });
 
+const codemodeArgs = { code: 'text("CALM_CODEMODE_SCRIPT_VISIBLE")' };
+const codemodeResult = {
+  content: [
+    { type: "text", text: "Script completed\nWall time 0.120 seconds\nOutput:\n" },
+    { type: "text", text: "CALM_CODEMODE_RESULT_VISIBLE" },
+  ],
+  details: { calls: [{ name: "read", args: '{"path":"sample.txt"}', status: "ok", durationMs: 12 }] },
+  isError: false,
+  durationMs: 120,
+};
+const codemodeRows = [];
+const codemodeTextRows = [];
+const codemodeStockRows = [];
+for (const outputPad of createCodemodeToolDefinition ? [0, 1] : []) {
+  for (const expanded of [false, true]) {
+    const codemodeExecutionProbe = createCodemodeToolDefinition();
+    const codemodeRenderers = resolveToolRenderers("codemode", () => codemodeExecutionProbe);
+    if (codemodeRenderers?.execute !== codemodeExecutionProbe.execute) {
+      throw new Error("Calm changed Pi's codemode execution function while resolving presentation");
+    }
+    const stock = new ToolExecutionComponent(
+      "codemode",
+      `codemode-stock-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      createCodemodeToolDefinition(),
+      renderUi,
+      process.cwd(),
+    );
+    const actual = new ToolExecutionComponent(
+      "codemode",
+      `codemode-calm-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      resolveToolRenderers("codemode", () => createCodemodeToolDefinition()),
+      renderUi,
+      process.cwd(),
+    );
+    for (const row of [stock, actual]) {
+      row.markExecutionStarted();
+      row.setArgsComplete();
+      row.updateResult(codemodeResult);
+      row.setExpanded(expanded);
+    }
+    if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
+      throw new Error(`Pi codemode rendering changed from stock while Calm was off (outputPad=${outputPad}, ${expanded ? "expanded" : "collapsed"})`);
+    }
+    codemodeRows.push(actual);
+    codemodeTextRows.push(actual);
+    codemodeStockRows.push(stock);
+  }
+}
+for (const expanded of [false, true]) {
+  const stock = new ToolExecutionComponent(
+    "codemode",
+    `codemode-fallback-stock-${expanded}`,
+    codemodeArgs,
+    { showImages: false, outputPad: 0 },
+    undefined,
+    renderUi,
+    process.cwd(),
+  );
+  const actual = new ToolExecutionComponent(
+    "codemode",
+    `codemode-fallback-calm-${expanded}`,
+    codemodeArgs,
+    { showImages: false, outputPad: 0 },
+    resolveToolRenderers("codemode", () => undefined),
+    renderUi,
+    process.cwd(),
+  );
+  for (const row of [stock, actual]) {
+    row.markExecutionStarted();
+    row.setArgsComplete();
+    row.updateResult(codemodeResult);
+    row.setExpanded(expanded);
+  }
+  if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
+    throw new Error(`Calm prevented Pi's generic codemode fallback (${expanded ? "expanded" : "collapsed"})`);
+  }
+}
+const downstreamSelfShell = {
+  renderShell: "self",
+  renderCall(args, theme, context) {
+    return new Text(theme.fg("accent", `SELF_CALL ${args.code}`), context.outputPad, 0);
+  },
+  renderResult(result, _options, theme, context) {
+    return new Text(theme.fg("success", `SELF_RESULT ${result.content[1].text}`), context.outputPad, 0);
+  },
+};
+toolRendererResolvers.push((toolName, next) => toolName === "codemode" ? downstreamSelfShell : next());
+for (const outputPad of [0, 1]) {
+  for (const expanded of [false, true]) {
+    const stock = new ToolExecutionComponent(
+      "codemode",
+      `codemode-self-stock-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      downstreamSelfShell,
+      renderUi,
+      process.cwd(),
+    );
+    const actual = new ToolExecutionComponent(
+      "codemode",
+      `codemode-self-calm-${outputPad}-${expanded}`,
+      codemodeArgs,
+      { showImages: false, outputPad },
+      resolveToolRenderers("codemode", () => undefined),
+      renderUi,
+      process.cwd(),
+    );
+    for (const row of [stock, actual]) {
+      row.markExecutionStarted();
+      row.setArgsComplete();
+      row.updateResult(codemodeResult);
+      row.setExpanded(expanded);
+    }
+    if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
+      throw new Error(`Calm changed a downstream self-rendering codemode shell (outputPad=${outputPad}, ${expanded ? "expanded" : "collapsed"})`);
+    }
+    codemodeRows.push(actual);
+    codemodeTextRows.push(actual);
+    codemodeStockRows.push(stock);
+  }
+}
+toolRendererResolvers.pop();
+if (createCodemodeToolDefinition && tools.some((tool) => tool.name === "codemode")) {
+  throw new Error("Calm registered or replaced Pi's codemode tool instead of using its renderer resolver");
+}
+
 setCapabilities({ images: "iterm2", trueColor: true, hyperlinks: true });
 const imageRow = new ToolExecutionComponent(
   "read",
@@ -1470,6 +1629,49 @@ imageRow.updateResult({
   isError: false,
 });
 imageRow.setExpanded(true);
+let codemodeImageActual;
+if (createCodemodeToolDefinition) {
+  const codemodeImageResult = {
+    ...codemodeResult,
+    content: [
+      ...codemodeResult.content,
+      {
+        type: "image",
+        data: "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mNk+A8AAQUBAScY42YAAAAASUVORK5CYII=",
+        mimeType: "image/png",
+      },
+    ],
+  };
+  const codemodeImageStock = new ToolExecutionComponent(
+    "codemode",
+    "codemode-image-stock",
+    codemodeArgs,
+    { showImages: true },
+    createCodemodeToolDefinition(),
+    renderUi,
+    process.cwd(),
+  );
+  codemodeImageActual = new ToolExecutionComponent(
+    "codemode",
+    "codemode-image-calm",
+    codemodeArgs,
+    { showImages: true },
+    resolveToolRenderers("codemode", () => createCodemodeToolDefinition()),
+    renderUi,
+    process.cwd(),
+  );
+  for (const row of [codemodeImageStock, codemodeImageActual]) {
+    row.markExecutionStarted();
+    row.setArgsComplete();
+    row.updateResult(codemodeImageResult);
+    row.setExpanded(true);
+  }
+  if (JSON.stringify(codemodeImageActual.render(100)) !== JSON.stringify(codemodeImageStock.render(100))) {
+    throw new Error("Calm changed Pi's stock codemode image rendering while Calm was off");
+  }
+  codemodeRows.push(codemodeImageActual);
+  codemodeStockRows.push(codemodeImageStock);
+}
 const imageVisibleBefore = imageRow.render(100);
 if (!imageVisibleBefore.join("\n").includes("\x1b]1337;File=")) {
   throw new Error("image-capable Pi fixture did not render the built-in read image boundary");
@@ -1521,7 +1723,16 @@ let terminalInputHandler;
 let workingVisible;
 let hiddenThinkingLabel = "unset";
 const statuses = new Map();
-const sessionEntries = [{ type: "message", message: { role: "toolResult", content: "kept" } }];
+const sessionEntries = [
+  {
+    type: "message",
+    message: { role: "assistant", content: [{ type: "toolCall", id: "codemode-call", name: "codemode", arguments: codemodeArgs }] },
+  },
+  {
+    type: "message",
+    message: { role: "toolResult", toolCallId: "codemode-call", toolName: "codemode", content: codemodeResult.content, details: codemodeResult.details },
+  },
+];
 const entriesBefore = JSON.stringify(sessionEntries);
 const commandContext = {
   sessionManager: { getEntries: () => sessionEntries },
@@ -1546,6 +1757,7 @@ const commandContext = {
     setToolsExpanded(value) {
       expanded = value;
       for (const row of rows) row.actual.setExpanded(value);
+      for (const row of codemodeRows) row.setExpanded(value);
       watchActual.setExpanded(value);
       customRow.setExpanded(value);
       imageRow.setExpanded(value);
@@ -1559,6 +1771,31 @@ const commandContext = {
 await handlers.get("session_start")[0]({ reason: "startup" }, commandContext);
 if (workingVisible !== true || hiddenThinkingLabel !== undefined) {
   throw new Error("session start did not restore Pi's stock working and thinking presentation");
+}
+if (createCodemodeToolDefinition) {
+  await calmCommand.handler("", commandContext);
+  for (const row of codemodeTextRows) {
+    const rendered = row.render(100);
+    if (rendered.length !== 0) {
+      throw new Error(`Calm left codemode row ${row.toolCallId} visible after it was enabled: ${JSON.stringify(rendered)}`);
+    }
+  }
+  const codemodeImageOutput = codemodeImageActual.render(100).join("\n");
+  if (!codemodeImageOutput.includes("\x1b]1337;File=")) {
+    throw new Error("Pi's codemode image result no longer follows its separate stock image renderer");
+  }
+  if (codemodeImageOutput.includes("CALM_CODEMODE_SCRIPT_VISIBLE") || codemodeImageOutput.includes("CALM_CODEMODE_RESULT_VISIBLE")) {
+    throw new Error("Calm exposed codemode text beside its separately rendered image");
+  }
+  await calmCommand.handler("", commandContext);
+  for (let index = 0; index < codemodeRows.length; index += 1) {
+    if (JSON.stringify(codemodeRows[index].render(100)) !== JSON.stringify(codemodeStockRows[index].render(100))) {
+      throw new Error("turning Calm off did not restore Pi's original codemode rendering");
+    }
+  }
+}
+if (JSON.stringify(sessionEntries) !== entriesBefore) {
+  throw new Error("Calm changed the stored codemode call or result message while toggling presentation");
 }
 const presentationRenderer = entryRenderers.get("firstmate-synthetic-input-presentation");
 if (!presentationRenderer) throw new Error("legacy synthetic presentation renderer was not registered");
@@ -1659,12 +1896,24 @@ for (const { name, actual } of rows) {
     throw new Error(`${name} was not hidden before export rendering`);
   }
 }
+if (createCodemodeToolDefinition) {
+  for (const row of codemodeTextRows) {
+    if (row.render(100).length !== 0) {
+      throw new Error("Calm left a codemode call or text result visible before export rendering");
+    }
+  }
+  if (!codemodeImageActual.render(100).join("\n").includes("\x1b]1337;File=")) {
+    throw new Error("Calm hid an image Pi appends outside codemode's named renderer slots");
+  }
+}
 // Pi 1.0.0 resolves export HTML through getToolDefinition. Pi 1.0.1 renamed that
 // dependency to getToolRenderers and ignores the old key, so a fixture that
 // passes only the old key reports every tool as missing. Supply both; each
 // release reads the key it knows and renders the same wrapped definitions.
 function createInstalledToolHtmlRenderer() {
-  const lookup = (name) => tools.find((tool) => tool.name === name);
+  const lookup = (name) => name === "codemode" && createCodemodeToolDefinition
+    ? resolveToolRenderers(name, () => createCodemodeToolDefinition())
+    : tools.find((tool) => tool.name === name);
   return createToolHtmlRenderer({
     getToolDefinition: lookup,
     getToolRenderers: lookup,
@@ -1678,6 +1927,7 @@ async function assertStockHtmlRendering(command, submitData) {
   const htmlRenderer = createInstalledToolHtmlRenderer();
   const exportCases = [
     ...cases.filter(([toolName]) => toolName === "grep" || toolName === "find"),
+    ...(createCodemodeToolDefinition ? [["codemode", codemodeArgs, codemodeResult]] : []),
     ["fm_watch_arm_pi", watchArgs, watchResult],
   ];
   for (const [name, args, result] of exportCases) {
@@ -1699,6 +1949,13 @@ async function assertStockHtmlRendering(command, submitData) {
 }
 
 await assertStockHtmlRendering("/export calm.html", "\r");
+if (createCodemodeToolDefinition) {
+  for (const row of codemodeTextRows) {
+    if (row.render(100).length !== 0) {
+      throw new Error("Calm did not re-hide codemode text rows after the temporary stock export render");
+    }
+  }
+}
 getKeybindings().setUserBindings({ "tui.input.submit": "alt+s" });
 editorText = "/export remapped.html";
 terminalInputHandler("\r");
@@ -1818,7 +2075,11 @@ JS
   out=$(cat "$output_file")
   [ "$status" -eq 0 ] || fail "Pi calm renderer and lifecycle contract failed: $out"
   [ -z "$out" ] || fail "Pi calm renderer test printed output: $out"
-  pass "Pi calm centralizes transcript visibility, preserves execution/export data, keeps Pi's stock working row visible while no run is active, and persists its choice across session starts"
+  if [ -f "$PI_PACKAGE_DIR/dist/extensions/codemode/tool.js" ]; then
+    pass "Pi $version Calm hides the codemode script, nested-call summary, timing, and text result only while enabled, restores stock rendering after toggles and export, leaves Pi-appended codemode images visible, preserves session data, keeps Pi's stock working row visible while idle, and persists its choice across sessions"
+  else
+    pass "Pi $version Calm renderer and lifecycle contract passes; the installed Pi release has no codemode tool to exercise"
+  fi
 }
 
 test_calm_mid_turn_working_notes() {
@@ -1899,6 +2160,7 @@ async function loadCalmExtension() {
       if (name === "calm") calmCommand = command;
     },
     registerEntryRenderer() {},
+    registerToolRenderer() {},
     registerTool(tool) {
       registeredTools.push(tool.name);
     },
@@ -3592,6 +3854,7 @@ const pi = {
     if (name === "calm") calmCommand = command;
   },
   registerEntryRenderer() {},
+  registerToolRenderer() {},
   registerTool() {},
   getAllTools() {
     return [];

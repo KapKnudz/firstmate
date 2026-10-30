@@ -66,13 +66,14 @@ Calm hides these rows:
 
 - Collapsed thinking labels.
 - The mid-turn assistant working-note blocks governed by the [shared preservation rule](#shared-preservation-rule-for-assistant-text) above.
-- The shells for the Pi built-in tool names Calm owns.
+- The shells for the Pi built-in tool names Calm owns, plus Pi's named `codemode` tool call and text result.
 - Firstmate-owned tool shells listed in the [Pi tool audit](calm-mode-feasibility.md#firstmate-pi-tool-audit).
 - Canonically classified Firstmate operational user rows.
 
 Pi applies the preservation rule independently to each text block.
 A short working note can therefore hide beside preserved substantive content in the same message.
 A working note is briefly visible while it streams, before its settled row collapses.
+Calm also hides codemode's script, nested-call summary, timing, and text output; Pi appends image results outside the tool renderer, so codemode images remain visible.
 
 The narration is hidden only from the live transcript presentation.
 It remains in the message, model context, session storage, and `/export` artifacts.
@@ -94,23 +95,24 @@ Inputs held behind a running compaction stay there until Pi sends them after com
 ### What stays unchanged on Pi
 
 Outside Pi's same-name built-in override collision described in [Pi compatibility](#pi-compatibility) below, Calm changes presentation only.
-Calm's built-in wrappers preserve Pi's execution behavior.
-Input delivery, ordering, model context, session storage, diagnostics, and `/export` and `/share` operation remain unchanged.
+Calm's built-in wrappers preserve Pi's execution behavior, and its codemode adapter changes only that named tool's on-screen call/result rendering.
+Codemode execution, input delivery, ordering, model context, session storage, diagnostics, and `/export` and `/share` operation remain unchanged.
 Every hidden Firstmate input remains available to the model and in serialized session data and exported artifacts.
 Legacy operational custom messages remain in session data and Pi's sidebar tree; depending on the Pi version, the main HTML transcript either omits them or includes them as rows hidden by default.
 Toggling Calm off restores ordinary rendering, and `Ctrl+O` expansion state is preserved.
 
 ### What stays visible on Pi
 
-Pi's supported presentation API does not expose a global transcript filter.
-These rows remain visible:
+Pi's named tool-renderer resolver is not a global transcript filter.
+Calm uses it only for Pi's `codemode` row; Pi appends tool images outside that renderer, so built-in images and any codemode images remain visible.
+These other rows remain visible:
 
 - Expanded reasoning and its reserved spacing.
-- Built-in tool images.
+- Built-in tool images and images returned by `codemode`.
 - User-bash rows.
 - Skill and summary rows.
 - Generic status notices.
-- Other arbitrary custom-tool or extension rows.
+- Other arbitrary custom-tool or extension rows, including custom tools other than `codemode`.
 
 These are supported-API boundaries rather than hidden-content failures.
 
@@ -121,7 +123,7 @@ These are supported-API boundaries rather than hidden-content failures.
 Calm has no numeric Pi version minimum or maximum.
 It never refuses Pi solely because its version is newer than a previously verified version.
 
-When Calm loads, the collapsed-thinking, operational-user-row, and queued-operational-row presentation adapters probe the exact Pi API seam they patch.
+When Calm loads, the collapsed-thinking, operational-user-row, queued-operational-row, and codemode presentation adapters probe the exact Pi API seam they use.
 If Pi removes one of those seams, Calm logs a diagnostic naming the unavailable adapter and skips only that adapter.
 `/calm`, the other adapters, and unrelated Pi extensions remain available.
 
