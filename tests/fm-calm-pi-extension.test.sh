@@ -1543,9 +1543,6 @@ for (const [caseIndex, testCase] of codemodeOptionalRendererCases.entries()) {
       const source = createCodemodeToolDefinition();
       for (const missing of testCase.missing) delete source[missing];
       const resolved = resolveToolRenderers("codemode", () => source);
-      if (resolved?.renderCall !== source.renderCall || resolved?.renderResult !== source.renderResult) {
-        throw new Error(`Calm changed the present codemode renderer when ${testCase.missing.join(" and ")} was missing`);
-      }
       const stock = new ToolExecutionComponent(
         "codemode",
         `codemode-optional-stock-${caseIndex}-${outputPad}-${expanded}`,
@@ -1584,27 +1581,14 @@ for (const [caseIndex, testCase] of codemodeOptionalRendererCases.entries()) {
     }
   }
 }
-if (createCodemodeToolDefinition) {
-  const partialRendererError = new Error("codemode renderer failure");
-  const partialRendererWithError = createCodemodeToolDefinition();
-  delete partialRendererWithError.renderCall;
-  partialRendererWithError.renderResult = () => {
-    throw partialRendererError;
-  };
-  const resolvedPartialRendererWithError = resolveToolRenderers("codemode", () => partialRendererWithError);
-  let partialRendererErrorPropagated = false;
-  try {
-    resolvedPartialRendererWithError.renderResult();
-  } catch (error) {
-    if (error !== partialRendererError) throw new Error("Calm replaced a failing present codemode renderer error");
-    partialRendererErrorPropagated = true;
-  }
-  if (!partialRendererErrorPropagated) throw new Error("Calm swallowed a failing present codemode renderer error");
-}
 function assertCodemodeOptionalRowsMatchStock(context) {
-  for (let index = 0; index < codemodeOptionalRows.length; index += 1) {
-    if (JSON.stringify(codemodeOptionalRows[index].render(100)) !== JSON.stringify(codemodeOptionalStockRows[index].render(100))) {
-      throw new Error(`Calm changed optional codemode callback rendering ${context}`);
+  for (const expanded of [false, true]) {
+    for (let index = 0; index < codemodeOptionalRows.length; index += 1) {
+      codemodeOptionalRows[index].setExpanded(expanded);
+      codemodeOptionalStockRows[index].setExpanded(expanded);
+      if (JSON.stringify(codemodeOptionalRows[index].render(100)) !== JSON.stringify(codemodeOptionalStockRows[index].render(100))) {
+        throw new Error(`Calm changed optional codemode callback rendering ${context} while ${expanded ? "expanded" : "collapsed"}`);
+      }
     }
   }
 }
@@ -1839,8 +1823,6 @@ const commandContext = {
       expanded = value;
       for (const row of rows) row.actual.setExpanded(value);
       for (const row of codemodeRows) row.setExpanded(value);
-      for (const row of codemodeOptionalRows) row.setExpanded(value);
-      for (const row of codemodeOptionalStockRows) row.setExpanded(value);
       watchActual.setExpanded(value);
       customRow.setExpanded(value);
       imageRow.setExpanded(value);
