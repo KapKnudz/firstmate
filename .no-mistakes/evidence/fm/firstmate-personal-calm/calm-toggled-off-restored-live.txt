@@ -1,0 +1,43 @@
+
+ ▀▀█  v1.4.0
+ █▀ █ escape interrupt · ctrl+c/ctrl+d clear/exit · / commands · ! bash · ctrl+o more
+ Press ctrl+o to show full startup help and loaded resources.
+
+ Pi can explain its own features and look up its docs. Ask it how to use or extend Pi.
+
+[Extensions]
+  fm-calm.ts
+
+
+ Warning: tmux extended-keys-format is xterm. Pi works best with csi-u. Add `set -g extended-keys-format csi-u` to ~/.tmux.conf and restart
+ tmux.
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+ Package Updates Available
+ Package updates are available. Run pi update --extensions
+ Packages:
+ - compact-adviser
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+
+ Call codemode with exactly this script: text(["CALM","ON","LIVE","SENTINEL"].join("_")). Then reply with exactly ON_DONE.
+
+
+
+ codemode
+ text(["CALM","ON","LIVE","SENTINEL"].join("_"))
+
+ CALM_ON_LIVE_SENTINEL
+
+ Took 0.1s
+
+
+ ON_DONE
+
+ Tool output: collapsed
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+
+────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────────
+~/.no-mistakes/worktrees/015805429b17/01M621EVCM0HRNCQFQ16T4VAJX (detached)
+↑1.4k ↓34 $0.002 (sub) 0.2%/500k (auto)                                                                   (openai-codex) gpt-6.1-terra • low

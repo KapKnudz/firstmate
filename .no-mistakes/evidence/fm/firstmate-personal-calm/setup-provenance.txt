@@ -1,0 +1,13 @@
+publication_fetch_url=https://github.com/KapKnudz/firstmate.git
+publication_push_url=https://github.com/KapKnudz/firstmate.git
+target_head=87bccdf2b9c0bfa286ba2015d6a1fcceb2037621
+official_frozen_commit_url=https://github.com/kunchenguid/firstmate/commit/b04154bd923561d1bfa3439b1883fdedc607754d
+official_merge_record=
+commit=7f4776e426176d9351330a75cddf66196af1054c
+parents=4a67799d8a8670d6ea1a55250b67d8474b070a09 b04154bd923561d1bfa3439b1883fdedc607754d
+subject=Merge remote-tracking branch 'refs/remotes/upstream/fm/firstmate-personal-calm-frozen' into fm/firstmate-personal-calm
+official_tip_is_ancestor_of_target=yes
+personal_calm_commits=
+87bccdf2 no-mistakes(review): Preserve downstream codemode self-shell rendering
+aad4f870 no-mistakes(review): Preserve Pi codemode fallback and output padding
+43142313 fix(calm): hide Pi codemode output
