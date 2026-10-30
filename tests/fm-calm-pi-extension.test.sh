@@ -1540,15 +1540,19 @@ const codemodeOptionalRendererCases = createCodemodeToolDefinition ? [
 for (const [caseIndex, testCase] of codemodeOptionalRendererCases.entries()) {
   for (const outputPad of [0, 1]) {
     for (const expanded of [false, true]) {
-      const source = createCodemodeToolDefinition();
-      for (const missing of testCase.missing) delete source[missing];
-      const resolved = resolveToolRenderers("codemode", () => source);
+      const stockSource = createCodemodeToolDefinition();
+      const actualSource = createCodemodeToolDefinition();
+      for (const missing of testCase.missing) {
+        delete stockSource[missing];
+        delete actualSource[missing];
+      }
+      const resolved = resolveToolRenderers("codemode", () => actualSource);
       const stock = new ToolExecutionComponent(
         "codemode",
         `codemode-optional-stock-${caseIndex}-${outputPad}-${expanded}`,
         codemodeArgs,
         { showImages: false, outputPad },
-        source,
+        stockSource,
         renderUi,
         process.cwd(),
       );
