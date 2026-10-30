@@ -256,7 +256,9 @@ export default function (pi: ExtensionAPI) {
       if (toolName !== "codemode") return next();
 
       const original = next();
-      if (!original?.renderCall || !original.renderResult) return original;
+      const originalRenderCall = original?.renderCall;
+      const originalRenderResult = original?.renderResult;
+      if (!originalRenderCall || !originalRenderResult) return original;
 
       const originalSelfShell = original.renderShell === "self";
       const shells = new WeakMap<object, StandardShellState>();
@@ -276,7 +278,7 @@ export default function (pi: ExtensionAPI) {
         renderCall(args, theme, context) {
           rememberCalmToolRow(context.state, context.invalidate);
           const state = shellFor(context);
-          const call = original.renderCall(args, theme, {
+          const call = originalRenderCall(args, theme, {
             ...context,
             lastComponent: state.call,
           });
@@ -289,7 +291,7 @@ export default function (pi: ExtensionAPI) {
         renderResult(result, options, theme, context) {
           rememberCalmToolRow(context.state, context.invalidate);
           const state = shellFor(context);
-          const renderedResult = original.renderResult(result, options, theme, {
+          const renderedResult = originalRenderResult(result, options, theme, {
             ...context,
             lastComponent: state.result,
           });
