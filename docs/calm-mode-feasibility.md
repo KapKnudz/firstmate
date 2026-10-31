@@ -22,7 +22,7 @@ This host tracks Pi latest, so the version the evidence is pinned to moves; the 
 ### 2026-10-28 Pi 1.4.0 codemode renderer
 
 Pi 1.4.0's `ExtensionAPI.registerToolRenderer` provides a per-tool renderer resolver whose `next()` includes later resolvers and the registered tool; it is not a transcript-wide filter and does not alter tool execution.
-The isolated Calm render/lifecycle test uses Pi's actual `ToolExecutionComponent` and `createCodemodeToolDefinition()` to verify stock-identical registered-tool rendering, generic fallback, and later self-rendering resolver presentation while Calm is off, zero-height call/text output while on, stock HTML export rendering, and restoration after export and toggle-off.
+The isolated Calm render/lifecycle test uses Pi's actual `ToolExecutionComponent` and `createCodemodeToolDefinition()` to verify stock-identical registered-tool rendering while Calm is off, Pi's stock fallback for partial definitions missing `renderCall`, `renderResult`, or both across output-padding and collapsed or expanded states before, during, and after Calm toggles, generic undefined-definition fallback, later self-rendering resolver presentation, zero-height call/text output for the complete definition while Calm is on, stock HTML export rendering, and restoration after export and toggle-off.
 Pi's `ToolExecutionComponent` separately appends image components outside renderer slots, so codemode image output remains visible; this supported-API boundary is deliberate and tested.
 
 ```sh
@@ -311,7 +311,7 @@ The same real-Pi reproduction then delivered the notification exactly once in a 
 
 ## Regression coverage
 
-`tests/fm-calm-pi-extension.test.sh` compares wrapped and stock renderers and verifies all seven built-ins plus `fm_watch_arm_pi`, as well as codemode's registered renderer, generic fallback, later self-rendering resolver, images, and export path; its rendered HTML export check accepts either omission or default-hidden hook rows for legacy synthetic messages while rejecting visible leakage.
+`tests/fm-calm-pi-extension.test.sh` compares wrapped and stock renderers and verifies all seven built-ins plus `fm_watch_arm_pi`; the [Pi 1.4.0 codemode renderer record](#2026-10-28-pi-140-codemode-renderer) owns its codemode cases, and the rendered HTML export check accepts either omission or default-hidden hook rows for legacy synthetic messages while rejecting visible leakage.
 `tests/fm-pi-branch-extension.test.sh` verifies both `fm_branch_outcomes` and `fm_branch_processed` call headers against pre-0.99 and 0.99+ Pi stock rendering, plus Calm toggling, capability-probed all-line versus collapsed stock result output, exact expanded output, and export rendering for outcomes.
 Together they exercise redraw of already-rendered tool, thinking, current operational-user, and legacy synthetic rows, and cover every policy class.
 It covers persisted preference restoration across every session-start reason and a real restart, proves the working-ship presentation and Calm-off stock `Working...` row through a delayed deterministic provider, asserts no Calm status row, verifies operational messages remain exact ordinary user-role session entries and complete exports, and drives genuine 100 by 44, 160 by 36, and 180 by 44 terminal fixtures.

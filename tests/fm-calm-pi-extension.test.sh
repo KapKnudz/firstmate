@@ -1488,6 +1488,8 @@ const codemodeResult = {
 const codemodeRows = [];
 const codemodeTextRows = [];
 const codemodeStockRows = [];
+const codemodeOptionalRows = [];
+const codemodeOptionalStockRows = [];
 for (const outputPad of createCodemodeToolDefinition ? [0, 1] : []) {
   for (const expanded of [false, true]) {
     const codemodeExecutionProbe = createCodemodeToolDefinition();
@@ -1525,6 +1527,73 @@ for (const outputPad of createCodemodeToolDefinition ? [0, 1] : []) {
     codemodeRows.push(actual);
     codemodeTextRows.push(actual);
     codemodeStockRows.push(stock);
+  }
+}
+const codemodeOptionalRendererCases = createCodemodeToolDefinition ? [
+  { missing: ["renderCall"], expectedFallback: ["CALM_CODEMODE_SCRIPT_VISIBLE"] },
+  { missing: ["renderResult"], expectedFallback: ["CALM_CODEMODE_RESULT_VISIBLE"] },
+  {
+    missing: ["renderCall", "renderResult"],
+    expectedFallback: ["CALM_CODEMODE_SCRIPT_VISIBLE", "CALM_CODEMODE_RESULT_VISIBLE"],
+  },
+] : [];
+for (const [caseIndex, testCase] of codemodeOptionalRendererCases.entries()) {
+  for (const outputPad of [0, 1]) {
+    for (const expanded of [false, true]) {
+      const stockSource = createCodemodeToolDefinition();
+      const actualSource = createCodemodeToolDefinition();
+      for (const missing of testCase.missing) {
+        delete stockSource[missing];
+        delete actualSource[missing];
+      }
+      const resolved = resolveToolRenderers("codemode", () => actualSource);
+      const stock = new ToolExecutionComponent(
+        "codemode",
+        `codemode-optional-stock-${caseIndex}-${outputPad}-${expanded}`,
+        codemodeArgs,
+        { showImages: false, outputPad },
+        stockSource,
+        renderUi,
+        process.cwd(),
+      );
+      const actual = new ToolExecutionComponent(
+        "codemode",
+        `codemode-optional-calm-${caseIndex}-${outputPad}-${expanded}`,
+        codemodeArgs,
+        { showImages: false, outputPad },
+        resolved,
+        renderUi,
+        process.cwd(),
+      );
+      for (const row of [stock, actual]) {
+        row.markExecutionStarted();
+        row.setArgsComplete();
+        row.updateResult(codemodeResult);
+        row.setExpanded(expanded);
+      }
+      const rendered = actual.render(100).join("\n");
+      if (JSON.stringify(actual.render(100)) !== JSON.stringify(stock.render(100))) {
+        throw new Error(`Calm changed Pi's stock codemode fallback when ${testCase.missing.join(" and ")} was missing`);
+      }
+      for (const marker of testCase.expectedFallback) {
+        if (!rendered.includes(marker)) {
+          throw new Error(`Pi did not render ${marker} when ${testCase.missing.join(" and ")} was missing`);
+        }
+      }
+      codemodeOptionalRows.push(actual);
+      codemodeOptionalStockRows.push(stock);
+    }
+  }
+}
+function assertCodemodeOptionalRowsMatchStock(context) {
+  for (const expanded of [false, true]) {
+    for (let index = 0; index < codemodeOptionalRows.length; index += 1) {
+      codemodeOptionalRows[index].setExpanded(expanded);
+      codemodeOptionalStockRows[index].setExpanded(expanded);
+      if (JSON.stringify(codemodeOptionalRows[index].render(100)) !== JSON.stringify(codemodeOptionalStockRows[index].render(100))) {
+        throw new Error(`Calm changed optional codemode callback rendering ${context} while ${expanded ? "expanded" : "collapsed"}`);
+      }
+    }
   }
 }
 for (const expanded of [false, true]) {
@@ -1780,6 +1849,7 @@ if (createCodemodeToolDefinition) {
       throw new Error(`Calm left codemode row ${row.toolCallId} visible after it was enabled: ${JSON.stringify(rendered)}`);
     }
   }
+  assertCodemodeOptionalRowsMatchStock("while Calm was enabled");
   const codemodeImageOutput = codemodeImageActual.render(100).join("\n");
   if (!codemodeImageOutput.includes("\x1b]1337;File=")) {
     throw new Error("Pi's codemode image result no longer follows its separate stock image renderer");
@@ -1793,6 +1863,7 @@ if (createCodemodeToolDefinition) {
       throw new Error("turning Calm off did not restore Pi's original codemode rendering");
     }
   }
+  assertCodemodeOptionalRowsMatchStock("after Calm was turned off");
 }
 if (JSON.stringify(sessionEntries) !== entriesBefore) {
   throw new Error("Calm changed the stored codemode call or result message while toggling presentation");
